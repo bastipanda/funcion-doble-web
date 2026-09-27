@@ -98,6 +98,7 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .facts div{min-width:0}
 .facts dt{font-size:13px;color:var(--muted)}
 .facts dd{margin:2px 0 0;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.rsrc{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
 .card section+section{margin-top:16px}
 .card p{margin:0;max-width:65ch}
 .card .src{font-size:13px;color:var(--muted);margin-top:8px}
@@ -134,6 +135,13 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 /* Catálogo */
 .search{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:10px;border:1.5px solid var(--raised);background:var(--panel);color:var(--ink);margin-bottom:8px}
 .catalog{list-style:none;margin:0;padding:0}
+.catbox>summary{list-style:none;display:flex;align-items:baseline;gap:10px;cursor:pointer;min-height:44px}
+.catbox>summary::-webkit-details-marker{display:none}
+.catbox>summary h2{margin:0}
+.catcount{color:var(--muted);font-size:15px}
+.chev{margin-left:auto;align-self:center;width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+.catbox[open]>summary .chev{transform:rotate(-135deg)}
+.catbox[open]>summary{margin-bottom:12px}
 .catalog li{border-top:1px dashed var(--line)}
 .catalog button{width:100%;justify-content:space-between;border:none;background:none;border-radius:0;padding:10px 2px;font-weight:500;text-align:left;min-height:48px}
 .catalog .right{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums;flex:none}
@@ -192,7 +200,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <div><dt>Director</dt><dd id="fDir"></dd></div>
       <div><dt>Duración</dt><dd id="fRun"></dd></div>
       <div><dt>En la watchlist</dt><dd id="fAdded"></dd></div>
-      <div><dt>Rating Letterboxd</dt><dd id="fRating"></dd></div>
+      <div><dt>Rating</dt><dd id="fRating"></dd></div>
     </dl>
     <section>
       <h3>Sinopsis</h3>
@@ -212,10 +220,12 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
   </article>
 
   <section class="block">
-    <h2>Todas las películas</h2>
-    <input id="q" class="search" type="search" placeholder="Buscar por título o director" aria-label="Buscar película">
-    <ul class="catalog" id="catalog"></ul>
-    <p class="more" id="catMore"></p>
+    <details class="catbox" id="catBox">
+      <summary><h2>Todas las películas</h2><span class="catcount" id="catCount"></span><span class="chev" aria-hidden="true"></span></summary>
+      <input id="q" class="search" type="search" placeholder="Buscar por título o director" aria-label="Buscar película">
+      <ul class="catalog" id="catalog"></ul>
+      <p class="more" id="catMore"></p>
+    </details>
   </section>
 
   <section class="block">
@@ -612,7 +622,14 @@ function renderCard(f){
   $("#fYear").textContent = f.y || (m.release ? m.release.slice(0, 4) : "—");
   $("#fDir").textContent = m.directors && m.directors.length ? m.directors.join(", ") : (m.tmdbId ? "—" : "…");
   $("#fRun").textContent = m.runtime ? hhmm(m.runtime) : (m.tmdbId ? "—" : "…");
-  $("#fRating").textContent = m.lbRating ? fmtRating(m.lbRating) + " / 5" : (m.lbRatingAt ? "sin suficientes votos" : (m.tmdbId || f.k.startsWith("b:") ? "—" : "…"));
+  const rt = $("#fRating"); rt.replaceChildren();
+  const rsrc = t => { const x = document.createElement("small"); x.className = "rsrc"; x.textContent = t; return x; };
+  const nfmt = n => n.toLocaleString("es-CL");
+  if (m.lbRating) rt.append(fmtRating(m.lbRating) + " / 5", rsrc("Letterboxd" + (m.lbRatingCount ? ", " + nfmt(m.lbRatingCount) + " votos" : "")));
+  else if (m.tmdbVote) rt.append(m.tmdbVote.toFixed(1).replace(".", ",") + " / 10",
+    rsrc("TMDB, " + nfmt(m.tmdbVotes) + " votos" + (m.lbRatingAt ? ". Letterboxd aún no muestra promedio" : "")));
+  else if (m.lbRatingAt || (m.tmdbVoteAt && !m.tmdbVote)) rt.append("Sin votos suficientes");
+  else rt.append(m.tmdbId ? "Pendiente" : "…");
   const dated = f.owners.filter(o => o.a).sort((x, y) => x.a - y.a);
   $("#fAdded").textContent = dated.length ? sinceText(dated[0].a) + (f.owners.length > 1 ? " (" + nameOf(dated[0].slot) + ")" : "") : "sin fecha";
   const syn = $("#fSyn");
@@ -681,6 +698,8 @@ function renderMarks(){
   $("#dHist ul").replaceChildren(...(state.spins.length ? state.spins.map(s => listRow(s.t + (s.y ? " (" + s.y + ")" : ""), fmtDate(s.at))) : [listRow("Todavía no se gira.", "")]));
 }
 function renderCatalog(){
+  $("#catCount").textContent = union().size ? "(" + union().size + ")" : "";
+  if (!$("#catBox").open) return;   // cerrada no se dibuja: ahorra trabajo en cada actualización
   const q = norm($("#q").value.trim());
   const films = [...union().values()]
     .filter(f => !q || norm(f.t).includes(q) || norm(((state.meta[f.k] || {}).directors || []).join(" ")).includes(q))
@@ -717,6 +736,7 @@ function toast(msg){
 
 /* ---------- eventos ---------- */
 $("#spin").addEventListener("click", spin);
+$("#catBox").addEventListener("toggle", () => { if ($("#catBox").open) { renderCatalog(); $("#q").focus({ preventScroll: true }); } });
 $("#again").addEventListener("click", spin);
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
 document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
