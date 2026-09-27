@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Función doble</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23A8262B'/><circle cx='50' cy='50' r='12' fill='%23F2C063'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#14181C;--panel:#1E252D;--raised:#2C3440;--ink:#E4EBF1;--muted:#9AABBB;--line:#2C3440;
+  --accent:#F2C063;--accent-ink:#14181C;--a:#FF9A3C;--b:#4FC3F7;--danger:#FF7A6B;
+  --marquee:#0E1114;--marquee-ink:#F5F1E8;--marquee-muted:#A9B4BF;--bulb:#F2C063;
+  --display:"Big Shoulders Display","Arial Narrow","Roboto Condensed",Impact,sans-serif;
+  --text:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+main{max-width:680px;margin:0 auto;padding:24px 16px 64px}
+a{color:inherit}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(44px,11vw,72px);line-height:.9;margin:0;letter-spacing:.01em}
+h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1;margin:0 0 12px;letter-spacing:.02em}
+h3{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.1;margin:0 0 6px;letter-spacing:.02em}
+.status{margin:10px 0 22px;color:var(--muted);font-size:14px;max-width:60ch}
+.status.warn{color:var(--danger)}
+
+/* Marquesina */
+.marquee{position:relative;background:var(--marquee);border:1.5px solid var(--line);color:var(--marquee-ink);border-radius:18px;padding:30px 26px 22px}
+.marquee::before{content:"";position:absolute;inset:7px;border-radius:13px;padding:9px;pointer-events:none;
+  background:radial-gradient(circle at center,var(--bulb) 0 2.4px,transparent 3.1px) 0 0/16px 16px;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);opacity:.55;filter:drop-shadow(0 0 3px var(--bulb))}
+.marquee.spinning::before{opacity:1;animation:chase .32s linear infinite}
+@keyframes chase{to{background-position:16px 0}}
+.marquee{padding:22px 16px 16px}
+.strip{position:relative;height:212px;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 14%,#000 86%,transparent);
+  mask-image:linear-gradient(to right,transparent,#000 14%,#000 86%,transparent)}
+.strip::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);border:8px solid transparent;border-top-color:var(--bulb);z-index:2}
+.track{position:absolute;top:16px;left:0;display:flex;gap:12px;will-change:transform}
+.tile{flex:none;width:120px;height:180px;border-radius:8px;overflow:hidden;background:var(--raised);position:relative;
+  display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;
+  font-family:var(--display);font-weight:700;font-size:20px;line-height:1.05;color:var(--marquee-muted);
+  opacity:.5;transition:opacity .35s,transform .35s,box-shadow .35s}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tile.win{opacity:1;transform:scale(1.07);box-shadow:0 0 0 3px var(--bulb),0 0 28px rgba(242,192,99,.5)}
+.strip.rolling .tile{opacity:.85}
+.meta{min-height:24px;text-align:center;font-size:14px;color:var(--marquee-muted);margin:6px 0 0}
+.owner{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.dot.a{background:var(--a)}.dot.b{background:var(--b)}
+
+/* Acciones */
+.actions{margin:0 0 8px}
+button,.btn{font:inherit;font-weight:600;font-size:15px;border-radius:10px;border:1.5px solid var(--raised);background:var(--panel);color:var(--ink);
+  padding:11px 16px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px}
+button:hover:not(:disabled),.btn:hover{border-color:var(--muted)}
+button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-events:none}
+:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+.primary{width:100%;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);
+  font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.04em;padding:10px 16px;min-height:62px;border-radius:12px}
+.primary:hover:not(:disabled){filter:brightness(1.08);border-color:var(--accent)}
+.stats{color:var(--muted);font-size:14px;margin:12px 0 0;font-variant-numeric:tabular-nums}
+
+/* Selector de lista */
+.scope{display:flex;gap:2px;background:var(--panel);border:1.5px solid var(--raised);border-radius:12px;padding:4px;margin:18px 0 8px}
+.scope button{flex:1 1 auto;border:none;background:none;min-height:40px;padding:6px 8px;font-size:14px;border-radius:8px;color:var(--muted);min-width:0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.scope button .dot{margin-right:5px;vertical-align:1px}
+.scope button[aria-checked="true"]{background:var(--raised);color:var(--ink)}
+.scope button:hover:not([aria-checked="true"]){color:var(--ink)}
+.check input:disabled+span{opacity:.45}
+
+/* Ficha */
+.card-head{margin:0 0 14px}
+.card-head h2{font-size:clamp(30px,7vw,44px);line-height:.98;margin:0 0 6px;overflow-wrap:anywhere}
+.owners-line{margin:0;color:var(--muted);font-size:14px}
+.card-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.again{width:100%;margin-top:8px;border-color:var(--bulb);color:var(--bulb)}
+.card.reveal{animation:rise .45s ease-out}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.card{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:18px;margin-top:18px;overflow:hidden}
+.still{margin:-18px -18px 16px;background:var(--marquee);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center}
+.still[hidden]{display:none}
+.still img{width:100%;height:100%;object-fit:cover;display:block}
+.still.poster{aspect-ratio:auto;padding:16px}
+.still.poster img{width:auto;max-width:60%;height:auto;max-height:360px;object-fit:contain;border-radius:6px}
+.card[hidden]{display:none}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:12px;margin:0 0 16px}
+.facts div{min-width:0}
+.facts dt{font-size:13px;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.card section+section{margin-top:16px}
+.card p{margin:0;max-width:65ch}
+.card .src{font-size:13px;color:var(--muted);margin-top:8px}
+.card .src a{margin-right:10px}
+.pending{color:var(--muted);font-style:italic}
+.fix{margin-top:16px;font-size:14px}
+.fix summary{color:var(--muted);font-weight:500}
+.fix .row{display:flex;gap:8px;margin-top:8px}
+.fix input{flex:1;min-width:0;font:inherit;font-size:15px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink)}
+
+/* Bloques */
+.block{border-top:1.5px solid var(--line);padding-top:22px;margin-top:30px}
+.check{display:flex;gap:12px;align-items:flex-start;padding:8px 0;cursor:pointer}
+.check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
+.hint{color:var(--muted);font-size:14px;margin:0 0 14px;max-width:62ch}
+.export{width:100%;margin-bottom:10px;border-color:var(--muted)}
+.lists{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slot{background:var(--panel);border:1.5px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.slot.a{border-top:5px solid var(--a)}.slot.b{border-top:5px solid var(--b)}
+.slot input.name{font:inherit;font-weight:600;font-size:17px;border:none;border-bottom:1.5px dashed var(--line);background:transparent;color:var(--ink);padding:2px 0;width:100%;border-radius:0}
+.slot input.user{font:inherit;font-size:15px;border:1.5px solid var(--raised);border-radius:8px;background:var(--bg);color:var(--ink);padding:8px 10px;width:100%}
+.slot input.name:focus-visible{outline:none;border-bottom-color:var(--ink)}
+.slot label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.slot .count{margin:0;font-size:14px;color:var(--muted)}
+.slot .count.err{color:var(--danger)}
+details.log{border-bottom:1px solid var(--line);padding:10px 0}
+summary{cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center}
+details ul{list-style:none;margin:8px 0 0;padding:0}
+details li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0;border-top:1px dashed var(--line);font-size:15px}
+details li span.when{color:var(--muted);font-size:13px;white-space:nowrap}
+details li button{min-height:36px;padding:6px 12px;font-size:14px}
+.ttl{min-width:0;overflow-wrap:anywhere}
+
+/* Catálogo */
+.search{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:10px;border:1.5px solid var(--raised);background:var(--panel);color:var(--ink);margin-bottom:8px}
+.catalog{list-style:none;margin:0;padding:0}
+.catalog li{border-top:1px dashed var(--line)}
+.catalog button{width:100%;justify-content:space-between;border:none;background:none;border-radius:0;padding:10px 2px;font-weight:500;text-align:left;min-height:48px}
+.catalog .right{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;font-variant-numeric:tabular-nums;flex:none}
+.catalog .out{opacity:.5}
+.more{color:var(--muted);font-size:14px;padding:10px 0}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  background:var(--raised);color:var(--ink);padding:11px 16px;border-radius:10px;font-size:14px;max-width:min(92vw,520px);
+  opacity:0;pointer-events:none;transition:opacity .2s;z-index:10}
+#toast.show{opacity:1}
+
+@media (max-width:480px){
+  .card-actions{grid-template-columns:1fr 1fr}
+  .card-actions .btn{grid-column:1/-1}
+  .lists{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .marquee.spinning::before{animation:none}
+  .card.reveal{animation:none}
+  #toast{transition:none}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Función doble</h1>
+    <p id="status" class="status">Cargando…</p>
+  </header>
+
+  <section class="marquee" id="marquee" aria-label="Ruleta">
+    <div class="strip" id="strip"><div class="track" id="track"></div></div>
+    <p class="meta" id="hint" aria-live="polite"></p>
+  </section>
+
+  <div class="scope" id="scope" role="radiogroup" aria-label="Sortear de">
+    <button role="radio" data-scope="all">Todas</button>
+    <button role="radio" data-scope="a"><span class="dot a"></span><span class="nm">Lista 1</span></button>
+    <button role="radio" data-scope="b"><span class="dot b"></span><span class="nm">Lista 2</span></button>
+    <button role="radio" data-scope="both">En común</button>
+  </div>
+
+  <div class="actions">
+    <button id="spin" class="primary" disabled>Girar</button>
+    <p id="stats" class="stats"></p>
+  </div>
+
+  <article class="card" id="card" hidden>
+    <figure class="still" id="fImgBox" hidden><img id="fImg" alt="" decoding="async"></figure>
+    <header class="card-head">
+      <h2 id="fTitle"></h2>
+      <p class="owners-line" id="fOwners"></p>
+    </header>
+    <dl class="facts">
+      <div><dt>Año</dt><dd id="fYear"></dd></div>
+      <div><dt>Director</dt><dd id="fDir"></dd></div>
+      <div><dt>Duración</dt><dd id="fRun"></dd></div>
+      <div><dt>En la watchlist</dt><dd id="fAdded"></dd></div>
+      <div><dt>Rating Letterboxd</dt><dd id="fRating"></dd></div>
+    </dl>
+    <section>
+      <h3>Sinopsis</h3>
+      <p id="fSyn"></p>
+    </section>
+    <div class="card-actions">
+      <button id="seen" disabled>La vimos</button>
+      <button id="veto" disabled title="Sale del sorteo por 14 días">Hoy no (14 días)</button>
+      <a id="open" class="btn" target="_blank" rel="noopener noreferrer" aria-disabled="true">Ver en Letterboxd</a>
+    </div>
+    <button id="again" class="again">Girar de nuevo</button>
+    <details class="fix" id="fix">
+      <summary>¿Los datos son de otra película?</summary>
+      <p class="hint" style="margin:8px 0 0">Pega el link correcto de TMDB o de Letterboxd. Se corrige en la próxima sincronización.</p>
+      <div class="row"><input id="fixUrl" type="url" placeholder="https://www.themoviedb.org/movie/…" aria-label="Link correcto"><button id="fixSend">Corregir</button></div>
+    </details>
+  </article>
+
+  <section class="block">
+    <h2>Todas las películas</h2>
+    <input id="q" class="search" type="search" placeholder="Buscar por título o director" aria-label="Buscar película">
+    <ul class="catalog" id="catalog"></ul>
+    <p class="more" id="catMore"></p>
+  </section>
+
+  <section class="block">
+    <h2>Reglas del sorteo</h2>
+    <label class="check"><input type="checkbox" id="optDouble"><span>Con "Todas", las que están en ambas listas tienen el doble de probabilidad</span></label>
+    <label class="check"><input type="checkbox" id="optRepeat"><span>No repetir las últimas 10 que salieron</span></label>
+  </section>
+
+  <section class="block">
+    <h2>Watchlists</h2>
+    <p class="hint">Con el usuario de Letterboxd puesto, la lista se actualiza sola cada 6 horas (la watchlist tiene que ser pública). La exportación manual es el respaldo: úsala una vez al principio para traer las fechas reales en que agregaron cada película, y cuando la sincronización automática muestre un error.</p>
+    <a class="btn export" href="https://letterboxd.com/user/exportdata/" target="_blank" rel="noopener noreferrer">Exportar desde Letterboxd</a>
+    <div class="lists">
+      <div class="slot a" data-slot="a">
+        <input class="name" placeholder="Nombre" aria-label="Nombre de la lista 1" maxlength="30">
+        <label>Usuario de Letterboxd<input class="user" placeholder="usuario" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="40"></label>
+        <p class="count">Sin lista</p>
+        <input type="file" accept=".zip,.csv,text/csv,application/zip" hidden>
+        <button class="upload">Subir exportación</button>
+      </div>
+      <div class="slot b" data-slot="b">
+        <input class="name" placeholder="Nombre" aria-label="Nombre de la lista 2" maxlength="30">
+        <label>Usuario de Letterboxd<input class="user" placeholder="usuario" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="40"></label>
+        <p class="count">Sin lista</p>
+        <input type="file" accept=".zip,.csv,text/csv,application/zip" hidden>
+        <button class="upload">Subir exportación</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Registro</h2>
+    <details class="log" id="dSeen"><summary>Vistas (<span class="n">0</span>)</summary><ul></ul></details>
+    <details class="log" id="dVeto"><summary>Vetadas por ahora (<span class="n">0</span>)</summary><ul></ul></details>
+    <details class="log" id="dHist"><summary>Últimos giros</summary><ul></ul></details>
+    <p class="hint" style="margin-top:14px">Datos e imágenes de películas: TMDB. Este producto usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script type="module">
+// La configuración de Firebase vive en config.js (así este archivo se puede reemplazar sin tocarla).
+const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
+
+const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
+const $ = s => document.querySelector(s);
+const state = { lists:{}, marks:{}, meta:{}, spins:[], status:null, current:null, mode:"loading",
+  opts:{ double:true, noRepeat:true, scope:"all" } };
+let store = null, spinning = false;
+
+/* ---------- preferencias por dispositivo ---------- */
+const OPT_KEY = "funcion-doble:opts";
+try { const o = JSON.parse(localStorage.getItem(OPT_KEY)); if (o) Object.assign(state.opts, o); } catch(e){}
+if (state.opts.onlyBoth) { state.opts.scope = "both"; delete state.opts.onlyBoth; }
+if (!["all","a","b","both"].includes(state.opts.scope)) state.opts.scope = "all";
+const saveOpts = () => { try { localStorage.setItem(OPT_KEY, JSON.stringify(state.opts)); } catch(e){} };
+
+/* ---------- almacenamiento ---------- */
+async function firebaseStore(){
+  const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+  const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status });
+  const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
+  return {
+    kind:"firebase",
+    subscribe(fn, onErr){
+      cb = fn;
+      F.onSnapshot(F.query(F.collection(db, "lists"), F.limit(10)), s => { lists = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "marks"), F.limit(3000)), s => { marks = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "meta"), F.limit(3000)), s => { meta = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.doc(db, "log", "spins"), s => { spins = s.exists() ? (s.data().items || []) : []; emit(); }, onErr);
+      F.onSnapshot(F.doc(db, "status", "sync"), s => { status = s.exists() ? s.data() : null; emit(); }, onErr);
+    },
+    setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
+    setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
+    delMark:(k) => F.deleteDoc(F.doc(db, "marks", k)),
+    setSpins:(arr) => F.setDoc(F.doc(db, "log", "spins"), { items: arr }),
+    requestFix:(k, url) => F.setDoc(F.doc(db, "fixes", k), { url, at: Date.now() })
+  };
+}
+function localStore(){
+  const KEY = "funcion-doble:v2";
+  let d = {};
+  try { d = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ d = {}; }
+  d.lists = d.lists || {}; d.marks = d.marks || {}; d.spins = d.spins || [];
+  let cb = null;
+  const emit = () => {
+    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null });
+  };
+  return {
+    kind:"local",
+    subscribe(fn){ cb = fn; emit(); },
+    async setList(slot, data){ d.lists[slot] = { ...(d.lists[slot] || {}), ...data }; emit(); },
+    async setMark(k, m){ d.marks[k] = m; emit(); },
+    async delMark(k){ delete d.marks[k]; emit(); },
+    async setSpins(arr){ d.spins = arr; emit(); },
+    async requestFix(){ throw { code:"local" }; }
+  };
+}
+async function write(fn, okMsg){
+  try { await fn(); if (okMsg) toast(okMsg); return true; }
+  catch(e){
+    const code = e && e.code;
+    if (code === "permission-denied") toast("La base de datos rechazó el cambio (reglas de Firestore).");
+    else if (code === "local") toast("Esto requiere Firebase configurado.");
+    else toast("No se pudo guardar. Revisa la conexión e intenta de nuevo.");
+    return false;
+  }
+}
+
+/* ---------- utilidades ---------- */
+const norm = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const titleKey = (t, y) => norm(t).replace(/[^a-z0-9]+/g, " ").trim() + "|" + (y || "");
+function sinceText(ms){
+  const d = Math.floor((Date.now() - ms) / DAY);
+  if (d < 1) return "desde hoy";
+  if (d < 31) return d === 1 ? "1 día" : d + " días";
+  const m = Math.floor(d / 30.44);
+  if (m < 12) return m === 1 ? "1 mes" : m + " meses";
+  const y = Math.floor(m / 12), r = m % 12;
+  return (y === 1 ? "1 año" : y + " años") + (r ? " y " + (r === 1 ? "1 mes" : r + " meses") : "");
+}
+const hhmm = min => String(Math.floor(min / 60)).padStart(2, "0") + ":" + String(min % 60).padStart(2, "0");
+const ago = ms => { const h = Math.floor((Date.now() - ms) / 3600000); return h < 1 ? "hace menos de 1 hora" : h < 48 ? "hace " + h + " h" : "hace " + Math.floor(h / 24) + " días"; };
+const fmtRating = r => r.toFixed(2).replace(".", ",");
+const fmtDate = ts => new Date(ts).toLocaleDateString("es-CL", { day:"numeric", month:"short" });
+const nameOf = slot => { const L = state.lists[slot]; return (L && L.name) || (slot === "a" ? "Lista 1" : "Lista 2"); };
+function linkOf(f){
+  if (f.lb) return f.lb;
+  if (f.k.startsWith("b:")) return "https://boxd.it/" + f.k.slice(2);
+  return "https://letterboxd.com/film/" + f.k + "/";
+}
+
+/* ---------- CSV ---------- */
+function parseCSV(t){
+  t = t.replace(/^\uFEFF/, "");
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && t[i+1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f !== "" || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.length > 1 || r[0] !== "");
+}
+function parseWatchlist(text){
+  const rows = parseCSV(text);
+  if (!rows.length) return null;
+  const h = rows[0].map(s => s.trim().toLowerCase());
+  const iD = h.indexOf("date"), iN = h.indexOf("name"), iY = h.indexOf("year"), iU = h.indexOf("letterboxd uri");
+  if (iN < 0) return null;
+  // Reusar claves ya resueltas (slug) de cualquier lista para no duplicar
+  const known = new Map();
+  for (const L of Object.values(state.lists)) for (const f of (L.films || [])) if (!f.k.startsWith("b:")) known.set(titleKey(f.t, f.y), f);
+  const seen = new Set(), out = [];
+  for (const r of rows.slice(1)) {
+    const t = (r[iN] || "").trim(); if (!t) continue;
+    const y = iY >= 0 ? (r[iY] || "").trim() : "";
+    const u = iU >= 0 ? (r[iU] || "").trim() : "";
+    const d = iD >= 0 ? (r[iD] || "").trim() : "";
+    const prev = known.get(titleKey(t, y));
+    let k, lb;
+    if (prev) { k = prev.k; lb = prev.lb; }
+    else {
+      const m = u.match(/boxd\.it\/([A-Za-z0-9]+)/), m2 = u.match(/letterboxd\.com\/film\/([^/?#]+)/);
+      if (m) k = "b:" + m[1];
+      else if (m2) { k = m2[1]; lb = u; }
+      else continue;
+    }
+    if (seen.has(k)) continue; seen.add(k);
+    const film = { k, t };
+    if (y) film.y = y;
+    if (lb) film.lb = lb;
+    const ts = /^\d{4}-\d{2}-\d{2}$/.test(d) ? Date.parse(d + "T12:00:00Z") : NaN;
+    if (!isNaN(ts)) film.a = ts;
+    out.push(film);
+  }
+  return out;
+}
+async function importFile(slot, file, box){
+  let text;
+  try {
+    if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
+      if (!window.JSZip) { toast("No se pudo abrir el .zip. Sube el watchlist.csv que viene adentro."); return; }
+      const zip = await window.JSZip.loadAsync(file);
+      const c = Object.values(zip.files)
+        .filter(z => !z.dir && /(^|\/)watchlist\.csv$/i.test(z.name) && !/(^|\/)deleted\//i.test(z.name))
+        .sort((a, b) => a.name.split("/").length - b.name.split("/").length);
+      if (!c.length) { toast("El .zip no trae un watchlist.csv."); return; }
+      text = await c[0].async("string");
+    } else text = await file.text();
+  } catch(e){ toast("No se pudo leer el archivo."); return; }
+  const films = parseWatchlist(text);
+  if (!films) { toast("Formato no reconocido: faltan las columnas Name, Year y Letterboxd URI."); return; }
+  if (!films.length) { toast("La watchlist viene vacía."); return; }
+  const name = box.querySelector("input.name").value.trim() || nameOf(slot);
+  const data = { name, films, updatedAt: Date.now(), source: "csv" };
+  if (JSON.stringify(data).length > 900000) { toast("La lista supera el tamaño que la base puede guardar."); return; }
+  await write(() => store.setList(slot, data), name + ": " + films.length + " películas cargadas.");
+}
+
+/* ---------- sorteo ---------- */
+function union(){
+  const m = new Map();
+  for (const slot of ["a","b"]) {
+    const L = state.lists[slot]; if (!L || !L.films) continue;
+    for (const f of L.films) {
+      let e = m.get(f.k);
+      if (!e) { e = { ...f, owners:[] }; m.set(f.k, e); }
+      if (!e.owners.some(o => o.slot === slot)) e.owners.push({ slot, a: f.a || null });
+    }
+  }
+  return m;
+}
+const isOut = (k, now = Date.now()) => { const mk = state.marks[k]; return !!mk && (mk.s === "seen" || (mk.s === "veto" && mk.until > now)); };
+function inScope(f){
+  const sc = state.opts.scope;
+  if (sc === "all") return true;
+  if (sc === "both") return f.owners.length > 1;
+  return f.owners.some(o => o.slot === sc);
+}
+function computePool(){
+  const all = union(); let both = 0; const base = [];
+  const dbl = state.opts.scope === "all" && state.opts.double;
+  for (const f of all.values()) {
+    if (isOut(f.k)) continue;
+    const isBoth = f.owners.length > 1;
+    if (isBoth) both++;
+    if (!inScope(f)) continue;
+    base.push({ f, w: isBoth && dbl ? 2 : 1 });
+  }
+  let pool = base;
+  if (state.opts.noRepeat) {
+    const recent = new Set(state.spins.slice(0, NO_REPEAT).map(s => s.k || s.i));
+    const filtered = base.filter(x => !recent.has(x.f.k));
+    if (filtered.length) pool = filtered;
+  }
+  return { pool, total: all.size, both, all, inPlay: base.length };
+}
+const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] / 4294967296; };
+function pick(p){
+  const tot = p.reduce((s, x) => s + x.w, 0); let r = rnd() * tot;
+  for (const x of p) { r -= x.w; if (r < 0) return x.f; }
+  return p[p.length - 1].f;
+}
+const TILE_W = 120, TILE_GAP = 12;
+let stripIndex = 0, idleSig = "";
+const posterOf = f => { const m = state.meta[f.k]; return m && m.poster ? "https://image.tmdb.org/t/p/w185" + m.poster : null; };
+function tileEl(f){
+  const d = document.createElement("div"); d.className = "tile";
+  const src = f && posterOf(f);
+  if (src) { const img = document.createElement("img"); img.src = src; img.alt = ""; img.decoding = "async"; img.onerror = () => img.remove(); d.appendChild(img); }
+  d.appendChild(document.createTextNode(f ? f.t : "?"));
+  return d;
+}
+function centerX(i){ return $("#strip").clientWidth / 2 - (i * (TILE_W + TILE_GAP) + TILE_W / 2); }
+function place(i, transition){
+  const tr = $("#track");
+  tr.style.transition = transition || "none";
+  tr.style.transform = "translateX(" + centerX(i) + "px)";
+  stripIndex = i;
+}
+function hashStr(str){ let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function buildIdle(force){
+  if (spinning || state.current) return;
+  const films = [...union().values()];
+  const withPoster = films.filter(posterOf);
+  const src = (withPoster.length >= 7 ? withPoster : films).slice().sort((a, b) => hashStr(a.k) - hashStr(b.k)).slice(0, 15);
+  const sig = src.map(f => f.k + (posterOf(f) ? "*" : "")).join("|");
+  if (!force && sig === idleSig) return;
+  idleSig = sig;
+  const tr = $("#track");
+  tr.replaceChildren(...(src.length ? src.map(tileEl) : [tileEl(null)]));
+  place(Math.floor(tr.children.length / 2));
+}
+function stripShow(f){
+  // deja la película al centro, destacada, con vecinos al azar
+  const { pool } = computePool();
+  const rand = () => pool.length ? pool[Math.floor(rnd() * pool.length)].f : null;
+  const seq = [rand(), rand(), rand(), f, rand(), rand(), rand()];
+  $("#track").replaceChildren(...seq.map(tileEl));
+  place(3);
+  $("#track").children[3].classList.add("win");
+  idleSig = "";
+}
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function spin(){
+  if (spinning) return;
+  const { pool } = computePool();
+  if (!pool.length) { toast(state.opts.scope === "all" ? "No queda ninguna película en juego." : "No queda ninguna película en juego en esta selección."); return; }
+  const chosen = pick(pool);
+  spinning = true; renderButtons();
+  $("#card").hidden = true; $("#card").classList.remove("reveal");
+  const hint = $("#hint"), strip = $("#strip"), marquee = $("#marquee"), tr = $("#track");
+  hint.textContent = "Girando…";
+  $("#marquee").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rand = () => pool[Math.floor(rnd() * pool.length)].f;
+  marquee.classList.add("spinning");
+  if (!reduce) {
+    const N = 44, L = N - 4;                     // la ganadora queda en L, con 3 afiches después
+    const seq = Array.from({ length: N }, rand);
+    seq[L] = chosen;
+    tr.replaceChildren(...seq.map(tileEl));
+    strip.classList.add("rolling");
+    place(3);
+    void tr.offsetWidth;
+    const jitter = (rnd() - 0.5) * TILE_W * 0.8;  // cae un poco corrida, como una ruleta de verdad
+    tr.style.transition = "transform 4.6s cubic-bezier(.08,.6,.12,1)";
+    tr.style.transform = "translateX(" + (centerX(L) + jitter) + "px)";
+    await wait(4700);
+    place(L, "transform .45s cubic-bezier(.3,0,.2,1)");
+    await wait(480);
+    strip.classList.remove("rolling");
+    tr.children[L].classList.add("win");
+  } else {
+    // sin desplazamiento: el afiche del centro va cambiando cada vez más lento
+    const seq = [rand(), rand(), rand(), rand(), rand(), rand(), rand()];
+    tr.replaceChildren(...seq.map(tileEl)); place(3);
+    const center = () => tr.children[3];
+    for (let d = 70; d < 420; d *= 1.22) { center().replaceWith(tileEl(rand())); await wait(d); }
+    center().replaceWith(tileEl(chosen)); center().classList.add("win");
+  }
+  marquee.classList.remove("spinning");
+  await wait(reduce ? 200 : 650);
+  idleSig = "";
+  state.current = chosen; spinning = false;
+  hint.textContent = "Salió " + chosen.t + (chosen.y ? " (" + chosen.y + ")" : "");
+  renderCurrent(true); renderButtons();
+  const entry = { k: chosen.k, t: chosen.t, at: Date.now() };
+  if (chosen.y) entry.y = chosen.y;
+  write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
+}
+async function mark(kind){
+  const f = state.current; if (!f) return;
+  const m = { s: kind, t: f.t, at: Date.now() };
+  if (f.y) m.y = f.y;
+  if (kind === "veto") m.until = Date.now() + VETO_DAYS * DAY;
+  const ok = await write(() => store.setMark(f.k, m),
+    kind === "seen" ? f.t + " quedó como vista." : f.t + " sale del sorteo por " + VETO_DAYS + " días.");
+  if (ok) { state.current = null; $("#hint").textContent = "Listo para girar"; buildIdle(true); renderAll(); $("#marquee").scrollIntoView({ behavior:"smooth", block:"nearest" }); }
+}
+function show(k){
+  const f = union().get(k); if (!f || spinning) return;
+  state.current = f; stripShow(f);
+  $("#hint").textContent = f.t + (f.y ? " (" + f.y + ")" : "");
+  renderCurrent(true); renderButtons();
+}
+
+/* ---------- render ---------- */
+function renderStatus(){
+  const el = $("#status"); el.classList.remove("warn");
+  if (state.mode === "loading") { el.textContent = "Cargando…"; return; }
+  if (state.mode === "local") { el.textContent = "Modo de prueba: Firebase no está configurado y todo se guarda solo en este navegador."; el.classList.add("warn"); return; }
+  const s = state.status;
+  if (!s) { el.textContent = "Todavía no corre la sincronización automática."; return; }
+  let t = "Última sincronización " + ago(s.at) + ".";
+  if (s.errors && s.errors.length) { t += " Terminó con errores: " + s.errors[0]; el.classList.add("warn"); }
+  else if (Date.now() - s.at > 2 * DAY) { t += " Lleva más de 2 días sin correr: revisa GitHub Actions."; el.classList.add("warn"); }
+  el.textContent = t;
+}
+let cardKey = null;
+function renderCurrent(reveal){
+  if (spinning) return;
+  const f = state.current;
+  if (!f) {
+    const has = Object.values(state.lists).some(L => L.films && L.films.length);
+    $("#hint").textContent = has ? "Listo para girar" : "Agrega un usuario o una exportación para empezar";
+    $("#card").hidden = true; cardKey = null; buildIdle(); return;
+  }
+  const fresh = union().get(f.k) || f;
+  renderCard(fresh);
+  if (reveal) {
+    const card = $("#card");
+    card.classList.remove("reveal"); void card.offsetWidth; card.classList.add("reveal");
+    card.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+}
+function renderCard(f){
+  const m = state.meta[f.k] || {};
+  const pend = "Pendiente: llega en la próxima sincronización.";
+  $("#card").hidden = false;
+  $("#fTitle").textContent = f.t;
+  const ow = $("#fOwners"); ow.replaceChildren();
+  if (f.owners.length > 1) { ow.innerHTML = '<span class="dot a"></span> <span class="dot b"></span>'; ow.append(" En la watchlist de " + nameOf("a") + " y de " + nameOf("b")); }
+  else if (f.owners.length === 1) { const d = document.createElement("span"); d.className = "dot " + f.owners[0].slot; ow.append(d, " En la watchlist de " + nameOf(f.owners[0].slot)); }
+  $("#fYear").textContent = f.y || (m.release ? m.release.slice(0, 4) : "—");
+  $("#fDir").textContent = m.directors && m.directors.length ? m.directors.join(", ") : (m.tmdbId ? "—" : "…");
+  $("#fRun").textContent = m.runtime ? hhmm(m.runtime) : (m.tmdbId ? "—" : "…");
+  $("#fRating").textContent = m.lbRating ? fmtRating(m.lbRating) + " / 5" : (m.lbRatingAt ? "sin suficientes votos" : (m.tmdbId || f.k.startsWith("b:") ? "—" : "…"));
+  const dated = f.owners.filter(o => o.a).sort((x, y) => x.a - y.a);
+  $("#fAdded").textContent = dated.length ? sinceText(dated[0].a) + (f.owners.length > 1 ? " (" + nameOf(dated[0].slot) + ")" : "") : "sin fecha";
+  const syn = $("#fSyn");
+  syn.classList.toggle("pending", !m.overview);
+  syn.textContent = m.missing ? "No se encontró en TMDB. Corrígela con el link de abajo." :
+    m.overview ? m.overview + (m.overviewLang === "en" ? " (TMDB no tiene sinopsis en español)" : "") : (m.tmdbId ? "TMDB no tiene sinopsis para esta película." : pend);
+  const box = $("#fImgBox"), img = $("#fImg");
+  const path = m.backdrop || m.poster;
+  if (path) {
+    box.hidden = false; box.classList.toggle("poster", !m.backdrop);
+    img.alt = "Imagen de " + f.t;
+    img.onerror = () => { box.hidden = true; };
+    img.src = "https://image.tmdb.org/t/p/" + (m.backdrop ? "w780" : "w342") + path;
+  } else { box.hidden = true; img.removeAttribute("src"); }
+  if (cardKey !== f.k) { $("#fixUrl").value = ""; $("#fix").open = false; cardKey = f.k; }
+}
+function renderButtons(){
+  const { pool } = computePool();
+  $("#spin").disabled = spinning || !pool.length;
+  $("#spin").textContent = spinning ? "Girando…" : "Girar";
+  const has = !!state.current && !spinning;
+  $("#seen").disabled = !has; $("#veto").disabled = !has; $("#again").disabled = spinning || !pool.length;
+  const a = $("#open");
+  if (has) { a.href = linkOf(state.current); a.setAttribute("aria-disabled", "false"); }
+  else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
+}
+function renderStats(){
+  const { inPlay, total, both } = computePool();
+  $("#stats").textContent = total ? inPlay + " en juego de " + total + " en total; " + both + " están en ambas listas." : "";
+}
+function renderLists(){
+  document.querySelectorAll(".slot").forEach(box => {
+    const slot = box.dataset.slot, L = state.lists[slot] || {};
+    const nameInp = box.querySelector("input.name"), userInp = box.querySelector("input.user");
+    if (document.activeElement !== nameInp) nameInp.value = L.name || "";
+    if (document.activeElement !== userInp) userInp.value = L.user || "";
+    const c = box.querySelector(".count"); c.classList.remove("err");
+    const n = (L.films || []).length;
+    if (L.syncError) { c.textContent = n + " películas. La sincronización falló: " + L.syncError; c.classList.add("err"); }
+    else if (L.syncOkAt) {
+      const exp = state.status && state.status.lbCounts ? state.status.lbCounts[slot] : null;
+      c.textContent = n + " películas, sincronizada " + ago(L.syncOkAt) + "." + (exp != null && exp !== n ? " Letterboxd dice " + exp + "." : "");
+      if (exp != null && exp !== n) c.classList.add("err");
+    }
+    else if (n) c.textContent = n + " películas, desde exportación del " + fmtDate(L.updatedAt) + ".";
+    else c.textContent = L.user ? "Esperando la primera sincronización." : "Sin lista";
+  });
+}
+function listRow(label, when, action){
+  const li = document.createElement("li");
+  const left = document.createElement("span"); left.className = "ttl"; left.textContent = label;
+  const right = document.createElement("span"); right.style.cssText = "display:flex;align-items:center;gap:10px";
+  const w = document.createElement("span"); w.className = "when"; w.textContent = when; right.appendChild(w);
+  if (action) { const b = document.createElement("button"); b.textContent = action.label; b.addEventListener("click", action.fn); right.appendChild(b); }
+  li.append(left, right); return li;
+}
+function renderMarks(){
+  const now = Date.now(), entries = Object.entries(state.marks);
+  const seen = entries.filter(([, m]) => m.s === "seen").sort((a, b) => b[1].at - a[1].at);
+  const veto = entries.filter(([, m]) => m.s === "veto" && m.until > now).sort((a, b) => a[1].until - b[1].until);
+  const label = m => m.t + (m.y ? " (" + m.y + ")" : "");
+  const undo = (k, m) => () => write(() => store.delMark(k), "Vuelve al sorteo: " + m.t);
+  $("#dSeen .n").textContent = seen.length; $("#dVeto .n").textContent = veto.length;
+  $("#dSeen ul").replaceChildren(...(seen.length ? seen.map(([k, m]) => listRow(label(m), (m.by ? m.by + ", " : "") + fmtDate(m.at), { label:"Deshacer", fn: undo(k, m) })) : [listRow("Nada marcado todavía.", "")]));
+  $("#dVeto ul").replaceChildren(...(veto.length ? veto.map(([k, m]) => listRow(label(m), "vuelve el " + fmtDate(m.until), { label:"Liberar", fn: undo(k, m) })) : [listRow("Ninguna vetada.", "")]));
+  $("#dHist ul").replaceChildren(...(state.spins.length ? state.spins.map(s => listRow(s.t + (s.y ? " (" + s.y + ")" : ""), fmtDate(s.at))) : [listRow("Todavía no se gira.", "")]));
+}
+function renderCatalog(){
+  const q = norm($("#q").value.trim());
+  const films = [...union().values()]
+    .filter(f => !q || norm(f.t).includes(q) || norm(((state.meta[f.k] || {}).directors || []).join(" ")).includes(q))
+    .sort((a, b) => norm(a.t).localeCompare(norm(b.t)));
+  const now = Date.now();
+  $("#catalog").replaceChildren(...films.slice(0, CAT_MAX).map(f => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    const left = document.createElement("span"); left.className = "ttl" + (isOut(f.k, now) ? " out" : "");
+    left.textContent = f.t + (f.y ? " (" + f.y + ")" : "");
+    const right = document.createElement("span"); right.className = "right";
+    const m = state.meta[f.k];
+    if (m && m.lbRating) { const r = document.createElement("span"); r.textContent = fmtRating(m.lbRating); right.appendChild(r); }
+    if (m && m.runtime) { const r = document.createElement("span"); r.textContent = hhmm(m.runtime); right.appendChild(r); }
+    f.owners.forEach(o => { const d = document.createElement("span"); d.className = "dot " + o.slot; right.appendChild(d); });
+    b.append(left, right); b.addEventListener("click", () => show(f.k));
+    li.appendChild(b); return li;
+  }));
+  $("#catMore").textContent = films.length > CAT_MAX ? "Mostrando " + CAT_MAX + " de " + films.length + ". Busca para acotar." : (films.length ? "" : (q ? "Sin resultados." : ""));
+}
+function renderScope(){
+  document.querySelectorAll("#scope button").forEach(b => {
+    b.setAttribute("aria-checked", String(b.dataset.scope === state.opts.scope));
+    const nm = b.querySelector(".nm"); if (nm) nm.textContent = nameOf(b.dataset.scope);
+  });
+  $("#optDouble").disabled = state.opts.scope !== "all";
+}
+function renderAll(){ renderScope(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
+
+let toastTimer;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 3400);
+}
+
+/* ---------- eventos ---------- */
+$("#spin").addEventListener("click", spin);
+$("#again").addEventListener("click", spin);
+window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
+document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
+  if (spinning) return;
+  state.opts.scope = b.dataset.scope; saveOpts(); renderScope(); renderButtons(); renderStats();
+}));
+$("#seen").addEventListener("click", () => mark("seen"));
+$("#veto").addEventListener("click", () => mark("veto"));
+let qTimer; $("#q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(renderCatalog, 120); });
+$("#fixSend").addEventListener("click", () => {
+  const f = state.current, url = $("#fixUrl").value.trim();
+  if (!f) return;
+  if (!/themoviedb\.org\/movie\/\d+|letterboxd\.com\/film\//.test(url)) { toast("Pega un link de themoviedb.org/movie/… o letterboxd.com/film/…"); return; }
+  write(() => store.requestFix(f.k, url), "Corrección enviada: se aplica en la próxima sincronización.")
+    .then(ok => { if (ok) $("#fix").open = false; });
+});
+[["#optDouble","double"],["#optRepeat","noRepeat"]].forEach(([sel, key]) => {
+  const el = $(sel); el.checked = !!state.opts[key];
+  el.addEventListener("change", () => { state.opts[key] = el.checked; saveOpts(); renderButtons(); renderStats(); });
+});
+document.querySelectorAll(".slot").forEach(box => {
+  const slot = box.dataset.slot, file = box.querySelector('input[type="file"]');
+  box.querySelector(".upload").addEventListener("click", () => file.click());
+  file.addEventListener("change", async () => { const f = file.files && file.files[0]; file.value = ""; if (f && store) await importFile(slot, f, box); });
+  box.querySelector("input.name").addEventListener("change", e => {
+    const v = e.target.value.trim(); if (!v || !store || v === (state.lists[slot] || {}).name) return;
+    write(() => store.setList(slot, { name: v }));
+  });
+  box.querySelector("input.user").addEventListener("change", e => {
+    const v = e.target.value.trim().replace(/^@/, "").replace(/^https?:\/\/(www\.)?letterboxd\.com\//, "").replace(/\/.*$/, "");
+    e.target.value = v;
+    if (!store || v === ((state.lists[slot] || {}).user || "")) return;
+    if (v && !/^[A-Za-z0-9_]+$/.test(v)) { toast("El usuario de Letterboxd solo tiene letras, números y guion bajo."); return; }
+    write(() => store.setList(slot, { user: v, name: box.querySelector("input.name").value.trim() || nameOf(slot) }),
+      v ? "Guardado. La lista se llena en la próxima sincronización." : "Sincronización automática desactivada para esta lista.");
+  });
+});
+
+/* ---------- arranque ---------- */
+renderAll();
+(async () => {
+  const configured = FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "PEGAR_AQUI" && FIREBASE_CONFIG.projectId;
+  try { store = configured ? await firebaseStore() : localStore(); }
+  catch(e){ store = localStore(); toast("No se pudo cargar Firebase; modo de prueba local."); }
+  state.mode = store.kind;
+  store.subscribe(s => {
+    Object.assign(state, s);
+    if (!spinning) renderAll(); else { renderLists(); renderMarks(); renderStats(); renderCatalog(); }
+  }, () => toast("Se perdió la conexión con la base de datos. Recarga la página."));
+  renderAll();
+})();
+</script>
+</body>
+</html>
