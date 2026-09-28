@@ -90,6 +90,11 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .scope button:hover:not([aria-checked="true"]){color:var(--ink)}
 .check input:disabled+span{opacity:.45}
 
+/* Aviso de versión nueva */
+.update-bar{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--raised);border:1.5px solid var(--bulb);
+  border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:14px}
+.update-bar button{min-height:36px;padding:6px 14px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);flex:none}
+
 /* Más filtros */
 .more-box{background:var(--panel);border:1.5px solid var(--raised);border-radius:12px;padding:0 14px;margin:0 0 10px}
 .more-box>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:46px;cursor:pointer;font-weight:600}
@@ -267,6 +272,10 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 </head>
 <body>
 <main>
+  <div class="update-bar" id="updateBar" hidden>
+    <span>Hay una versión nueva de la página.</span>
+    <button id="updateBtn">Actualizar</button>
+  </div>
   <header>
     <h1>Ruletaboxd</h1>
     <p id="status" class="status">Cargando…</p>
@@ -1400,6 +1409,24 @@ document.querySelectorAll(".slot").forEach(box => {
       v ? "Guardado. La lista se llena en la próxima sincronización." : "Sincronización automática desactivada para esta lista.");
   });
 });
+
+/* ---------- aviso de versión nueva ----------
+   El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
+   la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
+   APP_VERSION se cambia en cada entrega. */
+const APP_VERSION = "2026-09-27-2";
+async function checkUpdate(){
+  if (!/^https?:/.test(location.protocol)) return;
+  try {
+    const r = await fetch(location.pathname + "?check=" + Date.now(), { cache: "no-store" });
+    const m = (await r.text()).match(/const APP_VERSION = "([^"]+)"/);
+    if (m && m[1] !== APP_VERSION) $("#updateBar").hidden = false;
+  } catch(e){}
+}
+$("#updateBtn").addEventListener("click", () => location.replace(location.pathname + "?v=" + Date.now()));
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkUpdate(); });
+setTimeout(checkUpdate, 4000);
+setInterval(checkUpdate, 30 * 60 * 1000);
 
 /* ---------- precarga de afiches ----------
    Descarga en segundo plano los afiches de las películas en juego, para que la ruleta
