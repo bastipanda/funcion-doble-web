@@ -108,7 +108,42 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .card-head{margin:0 0 14px}
 .card-head h2{font-size:clamp(30px,7vw,44px);line-height:.98;margin:0 0 6px;overflow-wrap:anywhere}
 .owners-line{margin:0;color:var(--muted);font-size:14px}
-.card-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+.where-row{margin:0 0 8px}
+.where-row .lbl{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.provs{display:flex;flex-wrap:wrap;gap:6px}
+.prov{display:inline-flex;align-items:center;gap:6px;background:var(--raised);border-radius:8px;padding:4px 8px 4px 4px;font-size:14px}
+.prov img{width:24px;height:24px;border-radius:5px;display:block}
+.prov.plain{padding:4px 8px}
+.where-foot{font-size:12px;color:var(--muted);margin:4px 0 0}
+.duel-btn{width:100%;margin-top:8px;border-color:var(--muted)}
+.duel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:4px 4px 0}
+.duel[hidden]{display:none}
+.duel .pick{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;padding:0;border:none;background:none;min-height:0;
+  color:var(--marquee-ink);font-size:13px;font-weight:500;text-align:center;border-radius:10px}
+.duel .pick .tile{width:100%;height:auto;aspect-ratio:2/3;opacity:1;font-size:16px}
+.duel .pick .cap{line-height:1.2;overflow-wrap:anywhere}
+.duel .pick .who{font-size:12px;color:var(--danger);min-height:15px}
+.duel .pick:disabled{opacity:1}
+.duel .pick.out .tile{color:transparent}
+.duel .pick.out .tile img{opacity:.22;filter:grayscale(1)}
+.duel .pick.out .cap{opacity:.45}
+.duel .pick.out .tile::after{content:"✕";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;color:var(--danger);font-family:var(--text)}
+.duel .pick.win .tile{box-shadow:0 0 0 3px var(--bulb),0 0 28px rgba(242,192,99,.5)}
+.duel.enter .pick{animation:rise .4s ease-out backwards}
+.duel.enter .pick:nth-child(2){animation-delay:.12s}.duel.enter .pick:nth-child(3){animation-delay:.24s}
+.duel-cancel{grid-column:1/-1;min-height:38px;font-size:14px;background:none;border-color:var(--line);color:var(--marquee-muted)}
+.tog-sum{margin:0 0 10px;color:var(--ink);font-size:15px}
+.together{list-style:none;margin:0;padding:0}
+.together li{display:flex;gap:12px;padding:10px 0;border-top:1px dashed var(--line);align-items:flex-start}
+.together img,.together .noimg{width:46px;height:69px;border-radius:5px;object-fit:cover;flex:none;background:var(--raised)}
+.together .body{min-width:0;flex:1}
+.together .tt{font-weight:600;overflow-wrap:anywhere}
+.together .dt{font-size:13px;color:var(--muted)}
+.together .rates{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px;font-size:14px}
+.together .rates a{text-decoration:none}
+.together .stars{color:var(--bulb);letter-spacing:1px}
+.together .verdict{font-size:13px;color:var(--muted);margin-top:2px}
 .again{width:100%;margin-top:8px;border-color:var(--bulb);color:var(--bulb)}
 .card.reveal{animation:rise .45s ease-out}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
@@ -122,6 +157,11 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:12px;margin:0 0 16px}
 .facts div{min-width:0}
 .facts .wide{grid-column:1/-1}
+.why{margin-top:6px;font-size:13px;color:var(--muted)}
+.why summary{min-height:28px;font-weight:500;font-size:13px}
+.why ul{list-style:none;margin:4px 0 0;padding:0}
+.why li{padding:4px 0;border-top:1px dashed var(--line);font-weight:400;display:block}
+.why strong{color:var(--ink);font-weight:600}
 .facts dt{font-size:13px;color:var(--muted)}
 .facts dd{margin:2px 0 0;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .rsrc{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
@@ -180,13 +220,13 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 #toast.show{opacity:1}
 
 @media (max-width:480px){
-  .card-actions{grid-template-columns:1fr 1fr}
-  .card-actions .btn{grid-column:1/-1}
   .lists{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){
   .marquee.spinning::before{animation:none}
   .card.reveal{animation:none}
+  .duel.enter .pick{animation:none}
+  .force-motion .duel.enter .pick{animation:rise .4s ease-out backwards}
   .force-motion .marquee.spinning::before{animation:chase .32s linear infinite}
   .force-motion .card.reveal{animation:rise .45s ease-out}
   #toast{transition:none}
@@ -202,6 +242,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 
   <section class="marquee" id="marquee" aria-label="Ruleta">
     <div class="strip" id="strip"><div class="track" id="track"></div></div>
+    <div class="duel" id="duel" hidden></div>
     <p class="meta" id="hint" aria-live="polite"></p>
   </section>
 
@@ -238,6 +279,9 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     </div>
     <p class="sub">Categorías <span>Toca una vez para incluir, dos para excluir, tres para quitar. Una película puede estar en varias.</span></p>
     <div class="chips" id="genreChips"></div>
+    <p class="sub">Plataformas <span>Marca las que tienen. Con la casilla de abajo activa, solo salen películas que están en alguna de ellas.</span></p>
+    <div class="chips" id="platChips"></div>
+    <label class="check"><input type="checkbox" id="optMine"><span>Solo lo que podemos ver en nuestras plataformas</span></label>
     <label class="check"><input type="checkbox" id="optMissing"><span>Incluir películas a las que les falta el dato filtrado (duración, rating o género)</span></label>
     <label class="check"><input type="checkbox" id="optDouble"><span>Con "Todas", las que están en ambas listas tienen el doble de probabilidad</span></label>
     <label class="check"><input type="checkbox" id="optRepeat"><span>No repetir las últimas 10 que salieron</span></label>
@@ -247,6 +291,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 
   <div class="actions">
     <button id="spin" class="primary" disabled>Girar</button>
+    <button id="duelBtn" class="duel-btn" disabled>Duelo: salen 3, cada uno veta una</button>
     <p id="stats" class="stats"></p>
   </div>
 
@@ -262,15 +307,19 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <div><dt>Duración</dt><dd id="fRun"></dd></div>
       <div><dt>En la watchlist</dt><dd id="fAdded"></dd></div>
       <div><dt>Rating</dt><dd id="fRating"></dd></div>
-      <div class="wide"><dt>Categorías</dt><dd id="fGenre"></dd></div>
+      <div class="wide"><dt>Categorías</dt><dd id="fGenre"></dd>
+        <details class="why" id="fWhyCats"><summary>¿Por qué estas categorías?</summary><ul id="fWhyList"></ul></details></div>
     </dl>
     <section>
       <h3>Sinopsis</h3>
       <p id="fSyn"></p>
     </section>
+    <section>
+      <h3>Dónde verla</h3>
+      <div id="fWhere"></div>
+    </section>
     <div class="card-actions">
-      <button id="seen" disabled>La vimos</button>
-      <button id="veto" disabled title="Sale del sorteo por 14 días">Hoy no (14 días)</button>
+      <a id="trailer" class="btn" target="_blank" rel="noopener noreferrer" aria-disabled="true">Ver tráiler</a>
       <a id="open" class="btn" target="_blank" rel="noopener noreferrer" aria-disabled="true">Ver en Letterboxd</a>
     </div>
     <button id="again" class="again">Girar de nuevo</button>
@@ -313,11 +362,19 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
   </section>
 
   <section class="block">
+    <details class="catbox" id="togBox">
+      <summary><h2>Vistas juntos</h2><span class="catcount" id="togCount"></span><span class="chev" aria-hidden="true"></span></summary>
+      <p class="tog-sum" id="togSummary"></p>
+      <ul class="together" id="togList"></ul>
+      <p class="hint">Sale de los diarios de Letterboxd: cuenta como vista juntos cuando ambos registran la misma película con hasta 3 días de diferencia. Toca una nota para abrir esa reseña.</p>
+    </details>
+  </section>
+
+  <section class="block">
     <h2>Registro</h2>
-    <details class="log" id="dSeen"><summary>Vistas (<span class="n">0</span>)</summary><ul></ul></details>
-    <details class="log" id="dVeto"><summary>Vetadas por ahora (<span class="n">0</span>)</summary><ul></ul></details>
+    <details class="log" id="dSeen"><summary>Vistas, fuera de la ruleta (<span class="n">0</span>)</summary><ul></ul></details>
     <details class="log" id="dHist"><summary>Últimos giros</summary><ul></ul></details>
-    <p class="hint" style="margin-top:14px">Datos e imágenes de películas: TMDB. Este producto usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
+    <p class="hint" style="margin-top:14px">Datos e imágenes de películas: TMDB. Disponibilidad en plataformas: JustWatch. Este producto usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
   </section>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -329,8 +386,8 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
-const state = { lists:{}, marks:{}, meta:{}, spins:[], status:null, current:null, mode:"loading",
-  opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true } };
+const state = { lists:{}, marks:{}, meta:{}, watched:{}, spins:[], status:null, current:null, mode:"loading",
+  opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false } };
 let store = null, spinning = false;
 
 /* ---------- preferencias por dispositivo ---------- */
@@ -339,6 +396,7 @@ try { const o = JSON.parse(localStorage.getItem(OPT_KEY)); if (o) Object.assign(
 if (state.opts.onlyBoth) { state.opts.scope = "both"; delete state.opts.onlyBoth; }
 if (!["all","a","b","both"].includes(state.opts.scope)) state.opts.scope = "all";
 if (!state.opts.genres || typeof state.opts.genres !== "object") state.opts.genres = {};
+if (!Array.isArray(state.opts.platforms)) state.opts.platforms = [];
 const saveOpts = () => { try { localStorage.setItem(OPT_KEY, JSON.stringify(state.opts)); } catch(e){} };
 
 /* ---------- almacenamiento ---------- */
@@ -346,8 +404,8 @@ async function firebaseStore(){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
-  let lists = {}, marks = {}, meta = {}, spins = [], status = null, cb = null;
-  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status });
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
   return {
     kind:"firebase",
@@ -358,6 +416,7 @@ async function firebaseStore(){
       F.onSnapshot(F.query(F.collection(db, "meta"), F.limit(3000)), s => { meta = toMap(s); emit(); }, onErr);
       F.onSnapshot(F.doc(db, "log", "spins"), s => { spins = s.exists() ? (s.data().items || []) : []; emit(); }, onErr);
       F.onSnapshot(F.doc(db, "status", "sync"), s => { status = s.exists() ? s.data() : null; emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "watched"), F.limit(3000)), s => { watched = toMap(s); emit(); }, onErr);
     },
     setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
     setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
@@ -374,7 +433,7 @@ function localStore(){
   let cb = null;
   const emit = () => {
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
-    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null });
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{} });
   };
   return {
     kind:"local",
@@ -512,48 +571,91 @@ function inScope(f){
   return f.owners.some(o => o.slot === sc);
 }
 /* ---------- categorías propias ----------
-   Se arman a partir de los géneros de TMDB, los géneros y temas de Letterboxd y las
-   palabras clave de TMDB. Cada término calza como palabra completa; con * al final
-   calza como comienzo de palabra. Para ajustar una categoría basta editar esta lista. */
+   Cada película suma puntos por categoría según la fuente de la evidencia:
+     género (TMDB o Letterboxd) = 3, tema de Letterboxd = 2, palabra clave de TMDB = 1.
+   Entra a una categoría con 2 puntos o más: basta un género o un tema, pero una
+   palabra clave suelta no alcanza (se necesitan dos). Cada película queda en sus
+   4 categorías más fuertes como máximo. "Clásicos" va aparte, por año.
+   En los términos, * al final significa "comienzo de palabra". */
 const CATEGORIES = [
-  ["Thriller psicológico", ["psychological*", "paranoi*", "obsession*", "gaslighting", "unreliable narrator", "mind game*", "psychopath*", "manipulation", "split personality", "mental illness", "insanity", "madness"]],
-  ["Filosófica y existencial", ["existential*", "philosoph*", "meaning of life", "nihilism", "metaphysic*", "consciousness", "free will", "human condition", "thought-provoking", "spiritual*", "faith", "religion", "mortality", "afterlife", "purpose", "solitude", "identity crisis"]],
-  ["Mente retorcida", ["mind-bending", "mind bending", "mind-blowing", "twist*", "nonlinear*", "non-linear*", "surreal*", "dreamlike", "dream*", "lucid dream*", "time loop", "alternate reality", "simulation", "puzzle*", "amnesia", "memory loss", "trippy", "hallucinat*"]],
-  ["Suspenso y misterio", ["suspense", "misterio", "thriller", "mystery", "whodunit", "conspiracy", "investigation", "detective*", "noir", "neo-noir", "cat and mouse"]],
-  ["Crimen y bajos fondos", ["crimen", "crime", "criminal*", "gangster*", "mafia", "mob", "heist", "robbery", "cartel", "drug*", "prison", "hitman", "corruption"]],
-  ["Terror e inquietud", ["terror", "horror", "creepy", "dread", "supernatural", "occult*", "slasher", "ghost*", "demon*", "possession", "haunted", "monster*", "unsettling", "disturbing", "gore", "zombie*"]],
-  ["Ciencia ficción y otros mundos", ["ciencia ficción", "science fiction", "sci-fi", "fantasía", "fantasy", "dystopi*", "space", "alien*", "artificial intelligence", "robot*", "time travel", "post-apocalyptic", "cyberpunk", "future"]],
-  ["Romance y desamor", ["romance", "romantic*", "love", "love story", "heartbreak*", "lovers", "marriage", "infidelity", "affair"]],
-  ["Para reírse", ["comedia", "comedy", "comedic", "satire", "satirical", "parody", "absurd*", "humor", "humour", "funny", "slapstick", "witty"]],
-  ["Acción y adrenalina", ["acción", "action", "adrenaline", "shootout", "martial arts", "car chase", "chase", "spy", "espionage", "assassin*"]],
-  ["Aventura y épica", ["aventura", "adventure", "epic*", "quest", "journey", "expedition", "survival", "western"]],
-  ["Historia y guerra", ["historia", "history", "historical*", "bélica", "war", "world war*", "warfare", "wartime", "soldier*", "battle*", "period piece", "biograph*", "true story", "based on true story"]],
-  ["Historias humanas", ["coming of age", "coming-of-age", "family", "grief", "loneliness", "friendship", "father*", "mother*", "childhood", "adolescence", "teenager*", "melancholy", "character study", "intimate", "moving", "heartfelt", "emotional", "touching"]],
-  ["Contemplativa", ["slow cinema", "contemplative", "meditative", "poetic", "arthouse", "art house", "minimalis*", "quiet", "atmospheric", "lyrical", "dreamy"]],
-  ["Animación", ["animación", "animation", "animated", "anime"]],
-  ["Documental", ["documental", "documentary"]],
-  ["Música y musicales", ["música", "music", "musical*", "musician*", "concert", "singer*"]],
-  ["Clásicos (antes de 1970)", null]
+  { name: "Thriller psicológico", genres: [],
+    terms: ["psychological*", "paranoi*", "obsession*", "gaslighting", "unreliable narrator", "mind game*", "psychopath*", "manipulation", "split personality", "mental illness", "insanity", "madness"] },
+  { name: "Filosófica y existencial", genres: [],
+    terms: ["existential*", "philosoph*", "meaning of life", "nihilism", "metaphysic*", "consciousness", "free will", "human condition", "thought-provoking", "spiritual*", "faith", "religion", "mortality", "afterlife", "solitude", "identity crisis"] },
+  { name: "Mente retorcida", genres: [],
+    terms: ["mind-bending", "mind bending", "mind-blowing", "twist*", "nonlinear*", "non-linear*", "surreal*", "dreamlike", "dream*", "time loop", "alternate reality", "simulation", "puzzle*", "amnesia", "memory loss", "trippy", "hallucinat*"] },
+  { name: "Suspenso y misterio", genres: ["suspense", "misterio", "thriller", "mystery"],
+    terms: ["suspense*", "mystery", "mysteries", "whodunit", "conspiracy", "investigation", "detective*", "noir", "neo-noir", "cat and mouse"] },
+  { name: "Crimen y bajos fondos", genres: ["crimen", "crime"],
+    terms: ["crime", "criminal*", "gangster*", "mafia", "mob", "heist", "robbery", "cartel", "drug*", "prison", "hitman", "corruption"] },
+  { name: "Terror e inquietud", genres: ["terror", "horror"],
+    terms: ["horror", "creepy", "dread", "supernatural", "occult*", "slasher", "ghost*", "demon*", "possession", "haunted", "monster*", "unsettling", "disturbing", "gore", "zombie*"] },
+  { name: "Ciencia ficción y otros mundos", genres: ["ciencia ficción", "science fiction", "fantasía", "fantasy"],
+    terms: ["sci-fi", "science fiction", "fantasy", "dystopi*", "space", "alien*", "artificial intelligence", "robot*", "time travel", "post-apocalyptic", "cyberpunk"] },
+  { name: "Romance y desamor", genres: ["romance"],
+    terms: ["romance", "romantic*", "love story", "heartbreak*", "lovers", "marriage", "infidelity", "affair"] },
+  { name: "Para reírse", genres: ["comedia", "comedy"],
+    terms: ["comedy", "comedic", "comedies", "satire", "satirical", "parody", "absurd*", "humor", "humour", "funny", "slapstick", "witty"] },
+  { name: "Acción y adrenalina", genres: ["acción", "action"],
+    terms: ["action", "adrenaline", "shootout", "martial arts", "car chase", "spy", "espionage", "assassin*"] },
+  { name: "Aventura y épica", genres: ["aventura", "adventure", "western"],
+    terms: ["adventure*", "epic*", "quest", "expedition", "survival", "western*"] },
+  { name: "Historia y guerra", genres: ["historia", "history", "bélica", "war"],
+    terms: ["war", "world war*", "warfare", "wartime", "soldier*", "battle*", "historical*", "period piece", "biograph*", "true story", "based on true story"] },
+  { name: "Historias humanas", genres: [],
+    terms: ["coming of age", "coming-of-age", "family", "grief", "loneliness", "friendship", "father*", "mother*", "childhood", "adolescence", "teenager*", "melancholy", "character study", "intimate", "moving", "heartfelt", "emotional", "touching"] },
+  { name: "Contemplativa", genres: [],
+    terms: ["slow cinema", "contemplative", "meditative", "poetic", "arthouse", "art house", "minimalis*", "quiet", "atmospheric", "lyrical", "dreamy"] },
+  { name: "Animación", genres: ["animación", "animation"], terms: ["animated", "anime", "animation"] },
+  { name: "Documental", genres: ["documental", "documentary"], terms: ["documentary"] },
+  { name: "Música y musicales", genres: ["música", "music"], terms: ["musical*", "musician*", "concert", "singer*", "rock band", "jazz"] },
+  { name: "Clásicos (antes de 1970)", classic: true }
 ];
+const LB_GENRES = new Set(["action", "adventure", "animation", "comedy", "crime", "documentary", "drama", "family", "fantasy",
+  "history", "horror", "music", "mystery", "romance", "science fiction", "thriller", "tv movie", "war", "western"]);
+const CAT_W = { genre: 3, theme: 2, kw: 1 }, CAT_MIN = 2, CAT_LIMIT = 4;
 const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const CAT_RE = CATEGORIES.map(([name, terms]) => [name, terms && new RegExp("\\b(?:" +
-  terms.map(t => t.endsWith("*") ? esc(t.slice(0, -1)) : esc(t) + "(?![a-záéíóúñ])").join("|") + ")", "i")]);
-const CAT_NAMES = CATEGORIES.map(c => c[0]);
+CATEGORIES.forEach(c => {
+  if (c.terms) c.re = new RegExp("\\b(?:" + c.terms.map(t => t.endsWith("*") ? esc(t.slice(0, -1)) : esc(t) + "(?![a-záéíóúñ])").join("|") + ")", "i");
+  if (c.genres) c.gset = new Set(c.genres);
+});
+const CAT_NAMES = CATEGORIES.map(c => c.name);
 // los filtros antiguos usaban géneros de TMDB: se descartan los que ya no existen
 Object.keys(state.opts.genres).forEach(g => { if (!CAT_NAMES.includes(g)) delete state.opts.genres[g]; });
 const catCache = new WeakMap();
-function catsOf(f){
+function catDetails(f){
   const m = state.meta[f.k];
   if (m && catCache.has(m)) return catCache.get(m);
-  const hay = m ? [...(m.genres || []), ...(m.lbTags || []), ...(m.tmdbKw || [])].join(" | ").toLowerCase() : "";
+  const items = [];
+  if (m) {
+    (m.genres || []).forEach(t => items.push({ kind: "genre", text: t, src: "género TMDB" }));
+    (m.lbTags || []).forEach(t => items.push(LB_GENRES.has(t.toLowerCase())
+      ? { kind: "genre", text: t, src: "género Letterboxd" } : { kind: "theme", text: t, src: "tema Letterboxd" }));
+    (m.tmdbKw || []).forEach(t => items.push({ kind: "kw", text: t, src: "palabra clave TMDB" }));
+  }
+  const scored = [];
+  for (const c of CATEGORIES) {
+    if (c.classic) continue;
+    const ev = { genre: [], theme: [], kw: [] };
+    for (const it of items) {
+      const low = it.text.toLowerCase();
+      if (it.kind === "genre" ? c.gset.has(low) : c.re.test(low)) ev[it.kind].push(it);
+    }
+    const score = (ev.genre.length ? CAT_W.genre : 0) + Math.min(ev.theme.length, 2) * CAT_W.theme + Math.min(ev.kw.length, 3) * CAT_W.kw;
+    if (score >= CAT_MIN) scored.push({ name: c.name, score, why: [...ev.genre, ...ev.theme, ...ev.kw] });
+  }
+  scored.sort((a, b) => b.score - a.score || CAT_NAMES.indexOf(a.name) - CAT_NAMES.indexOf(b.name));
+  const out = scored.slice(0, CAT_LIMIT);
   const year = parseInt(f.y || (m && m.release ? m.release.slice(0, 4) : ""), 10);
-  const out = CAT_RE.filter(([name, re]) => re ? (hay && re.test(hay)) : (year && year < 1970)).map(c => c[0]);
+  if (year && year < 1970) out.push({ name: "Clásicos (antes de 1970)", score: 0, why: [{ src: "año", text: String(year) }] });
   if (m) catCache.set(m, out);
   return out;
 }
+const catsOf = f => catDetails(f).map(c => c.name);
 function activeFilters(){
   const o = state.opts;
-  return (o.minRun ? 1 : 0) + (o.maxRun ? 1 : 0) + (o.minRating ? 1 : 0) + Object.keys(o.genres).length;
+  return (o.minRun ? 1 : 0) + (o.maxRun ? 1 : 0) + (o.minRating ? 1 : 0) + Object.keys(o.genres).length
+    + (o.onlyMine && o.platforms.length ? 1 : 0);
 }
 function passes(f){
   const o = state.opts, m = state.meta[f.k] || {}, keep = o.keepMissing;
@@ -564,6 +666,10 @@ function passes(f){
   if (o.minRating) {
     if (!m.lbRating) { if (!keep) return false; }
     else if (m.lbRating < o.minRating) return false;
+  }
+  if (o.onlyMine && o.platforms.length) {
+    if (!m.providers) { if (!keep) return false; }
+    else if (!m.providers.stream.some(p => o.platforms.includes(p.n))) return false;
   }
   const inc = Object.keys(o.genres).filter(g => o.genres[g] === 1);
   const exc = Object.keys(o.genres).filter(g => o.genres[g] === -1);
@@ -694,14 +800,64 @@ async function spin(){
   if (chosen.y) entry.y = chosen.y;
   write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
 }
-async function mark(kind){
-  const f = state.current; if (!f) return;
-  const m = { s: kind, t: f.t, at: Date.now() };
-  if (f.y) m.y = f.y;
-  if (kind === "veto") m.until = Date.now() + VETO_DAYS * DAY;
-  const ok = await write(() => store.setMark(f.k, m),
-    kind === "seen" ? f.t + " quedó como vista." : f.t + " sale del sorteo por " + VETO_DAYS + " días.");
-  if (ok) { state.current = null; $("#hint").textContent = "Listo para girar"; buildIdle(true); renderAll(); $("#marquee").scrollIntoView({ behavior:"smooth", block:"nearest" }); }
+let duel = null;
+function pickTile(f){
+  const b = document.createElement("button"); b.className = "pick"; b.type = "button";
+  const t = tileEl(f); t.classList.add("win-able");
+  const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = f.t;
+  const who = document.createElement("span"); who.className = "who";
+  b.append(t, cap, who); return b;
+}
+function startDuel(){
+  if (spinning) return;
+  const { pool } = computePool();
+  if (pool.length < 3) { toast("Se necesitan al menos 3 películas en juego."); return; }
+  // 3 distintas, respetando pesos y filtros
+  const picks = [], left = pool.slice();
+  while (picks.length < 3 && left.length) { const f = pick(left); picks.push(f); left.splice(left.findIndex(x => x.f === f), 1); }
+  const first = rnd() < 0.5 ? "a" : "b";
+  duel = { picks, turns: [first, first === "a" ? "b" : "a"], out: [] };
+  spinning = true; state.current = null;
+  $("#card").hidden = true; $("#strip").hidden = true;
+  const box = $("#duel"); box.hidden = false;
+  box.classList.remove("enter"); void box.offsetWidth; box.classList.add("enter");
+  const cancel = document.createElement("button"); cancel.className = "duel-cancel"; cancel.textContent = "Cancelar duelo";
+  cancel.addEventListener("click", endDuel);
+  box.replaceChildren(...picks.map((f, i) => { const b = pickTile(f); b.addEventListener("click", () => veto(i)); return b; }), cancel);
+  duelHint(); renderButtons();
+  $("#marquee").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "nearest" });
+}
+function duelHint(){
+  const t = duel.turns[duel.out.length];
+  $("#hint").textContent = "Turno de " + nameOf(t) + ": toca la que vetas";
+}
+async function veto(i){
+  if (!duel || duel.out.includes(i) || duel.out.length >= 2) return;
+  const slot = duel.turns[duel.out.length];
+  duel.out.push(i);
+  const b = $("#duel").children[i];
+  b.classList.add("out"); b.disabled = true; b.querySelector(".who").textContent = "vetó " + nameOf(slot);
+  if (duel.out.length < 2) { duelHint(); return; }
+  const wi = [0, 1, 2].find(x => !duel.out.includes(x)), winner = duel.picks[wi];
+  const wb = $("#duel").children[wi]; wb.classList.add("win"); wb.disabled = true;
+  [...$("#duel").children].forEach(c => { c.disabled = true; });
+  $("#hint").textContent = "Queda " + winner.t;
+  await wait(reduceMotion() ? 300 : 1100);
+  endDuel(winner);
+}
+function endDuel(winner){
+  const w = winner && winner.k ? winner : null;
+  duel = null; spinning = false;
+  $("#duel").hidden = true; $("#duel").replaceChildren(); $("#strip").hidden = false;
+  if (w) {
+    state.current = w; stripShow(w);
+    $("#hint").textContent = "Ganó el duelo: " + w.t + (w.y ? " (" + w.y + ")" : "");
+    renderCurrent(true);
+    const entry = { k: w.k, t: w.t, at: Date.now() };
+    if (w.y) entry.y = w.y;
+    write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
+  } else { $("#hint").textContent = ""; buildIdle(true); renderCurrent(); }
+  renderButtons();
 }
 function show(k){
   const f = union().get(k); if (!f || spinning) return;
@@ -721,6 +877,31 @@ function renderStatus(){
   if (s.errors && s.errors.length) { t += " Terminó con errores: " + s.errors[0]; el.classList.add("warn"); }
   else if (Date.now() - s.at > 2 * DAY) { t += " Lleva más de 2 días sin correr: revisa GitHub Actions."; el.classList.add("warn"); }
   el.textContent = t;
+}
+function renderWhere(m){
+  const box = $("#fWhere"); box.replaceChildren();
+  const P = m.providers;
+  const para = (t, cls) => { const p = document.createElement("p"); p.textContent = t; if (cls) p.className = cls; return p; };
+  if (!P) { box.appendChild(para(m.tmdbId ? "Pendiente: llega en la próxima sincronización." : "…", "pending")); return; }
+  const row = (label, arr, logos) => {
+    if (!arr || !arr.length) return;
+    const d = document.createElement("div"); d.className = "where-row";
+    const l = document.createElement("span"); l.className = "lbl"; l.textContent = label; d.appendChild(l);
+    const list = document.createElement("div"); list.className = "provs";
+    arr.forEach(p => {
+      const s = document.createElement("span"); s.className = "prov" + (logos && p.l ? "" : " plain");
+      if (logos && p.l) { const i = document.createElement("img"); i.src = "https://image.tmdb.org/t/p/w45" + p.l; i.alt = ""; i.onerror = () => i.remove(); s.appendChild(i); }
+      s.append(p.n); list.appendChild(s);
+    });
+    d.appendChild(list); box.appendChild(d);
+  };
+  if (P.stream.length) row("En streaming", P.stream, true);
+  else box.appendChild(para("No está en plataformas de streaming en Chile en este momento."));
+  row("Arriendo", P.rent, false);
+  row("Compra", P.buy, false);
+  const foot = para("Datos de JustWatch, pueden tener unos días de atraso. ", "where-foot");
+  if (P.link) { const a = document.createElement("a"); a.href = P.link; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = "Ver todas las opciones"; foot.appendChild(a); }
+  box.appendChild(foot);
 }
 let cardKey = null;
 function renderCurrent(reveal){
@@ -750,8 +931,16 @@ function renderCard(f){
   $("#fYear").textContent = f.y || (m.release ? m.release.slice(0, 4) : "—");
   $("#fDir").textContent = m.directors && m.directors.length ? m.directors.join(", ") : (m.tmdbId ? "—" : "…");
   $("#fRun").textContent = m.runtime ? hhmm(m.runtime) : (m.tmdbId ? "—" : "…");
-  const cats = catsOf(f);
+  renderWhere(m);
+  const det = catDetails(f), cats = det.map(c => c.name);
   $("#fGenre").textContent = cats.length ? cats.join(", ") : (m.genres && m.genres.length ? m.genres.join(", ") : (m.tmdbId ? "—" : "…"));
+  $("#fWhyCats").hidden = !det.length;
+  $("#fWhyList").replaceChildren(...det.map(c => {
+    const li = document.createElement("li"), b = document.createElement("strong");
+    b.textContent = c.name + ": ";
+    li.append(b, c.why.slice(0, 4).map(w => w.src + " «" + w.text + "»").join("; ") + (c.why.length > 4 ? "; …" : ""));
+    return li;
+  }));
   const rt = $("#fRating"); rt.replaceChildren();
   const rsrc = t => { const x = document.createElement("small"); x.className = "rsrc"; x.textContent = t; return x; };
   const nfmt = n => n.toLocaleString("es-CL");
@@ -779,12 +968,15 @@ function renderCard(f){
 function renderButtons(){
   const { pool } = computePool();
   $("#spin").disabled = spinning || !pool.length;
-  $("#spin").textContent = spinning ? "Girando…" : "Girar";
+  $("#spin").textContent = spinning && !duel ? "Girando…" : "Girar";
+  $("#duelBtn").disabled = spinning || pool.length < 3;
   const has = !!state.current && !spinning;
-  $("#seen").disabled = !has; $("#veto").disabled = !has; $("#again").disabled = spinning || !pool.length;
-  const a = $("#open");
-  if (has) { a.href = linkOf(state.current); a.setAttribute("aria-disabled", "false"); }
-  else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); }
+  $("#again").disabled = spinning || !pool.length;
+  const setLink = (a, url) => { if (url) { a.href = url; a.setAttribute("aria-disabled", "false"); } else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); } };
+  setLink($("#open"), has ? linkOf(state.current) : null);
+  const tr = has && (state.meta[state.current.k] || {}).trailer;
+  setLink($("#trailer"), tr ? "https://www.youtube.com/watch?v=" + encodeURIComponent(tr) : null);
+  $("#trailer").textContent = has && !tr && (state.meta[state.current.k] || {}).tmdbAt ? "Sin tráiler" : "Ver tráiler";
 }
 function renderStats(){
   const { inPlay, total, both } = computePool();
@@ -817,15 +1009,58 @@ function listRow(label, when, action){
   li.append(left, right); return li;
 }
 function renderMarks(){
-  const now = Date.now(), entries = Object.entries(state.marks);
+  const entries = Object.entries(state.marks);
   const seen = entries.filter(([, m]) => m.s === "seen").sort((a, b) => b[1].at - a[1].at);
-  const veto = entries.filter(([, m]) => m.s === "veto" && m.until > now).sort((a, b) => a[1].until - b[1].until);
   const label = m => m.t + (m.y ? " (" + m.y + ")" : "");
   const undo = (k, m) => () => write(() => store.delMark(k), "Vuelve al sorteo: " + m.t);
-  $("#dSeen .n").textContent = seen.length; $("#dVeto .n").textContent = veto.length;
+  $("#dSeen .n").textContent = seen.length;
   $("#dSeen ul").replaceChildren(...(seen.length ? seen.map(([k, m]) => listRow(label(m), (m.by ? m.by + ", " : "") + fmtDate(m.at), { label:"Deshacer", fn: undo(k, m) })) : [listRow("Nada marcado todavía.", "")]));
-  $("#dVeto ul").replaceChildren(...(veto.length ? veto.map(([k, m]) => listRow(label(m), "vuelve el " + fmtDate(m.until), { label:"Liberar", fn: undo(k, m) })) : [listRow("Ninguna vetada.", "")]));
   $("#dHist ul").replaceChildren(...(state.spins.length ? state.spins.map(s => listRow(s.t + (s.y ? " (" + s.y + ")" : ""), fmtDate(s.at))) : [listRow("Todavía no se gira.", "")]));
+}
+const stars = r => r == null ? "sin nota" : "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½" : "");
+function renderTogether(){
+  const W = Object.values(state.watched || {});
+  const dayMs = d => Date.parse(d + "T12:00:00Z");
+  const both = W.filter(w => w.by && w.by.a && w.by.b && Math.abs(dayMs(w.by.a.d) - dayMs(w.by.b.d)) <= 3 * DAY)
+    .sort((x, y) => (y.by.a.d > y.by.b.d ? y.by.a.d : y.by.b.d).localeCompare(x.by.a.d > x.by.b.d ? x.by.a.d : x.by.b.d));
+  const recent = Date.now() - 7 * DAY;
+  const waiting = W.filter(w => w.by && (!!w.by.a !== !!w.by.b) && dayMs((w.by.a || w.by.b).d) >= recent);
+  $("#togCount").textContent = both.length ? "(" + both.length + ")" : "";
+  if (!$("#togBox").open) return;
+  const rated = both.filter(w => w.by.a.r != null && w.by.b.r != null);
+  const avg = s => rated.length ? (rated.reduce((t, w) => t + w.by[s].r, 0) / rated.length).toFixed(1).replace(".", ",") : "—";
+  const same = rated.filter(w => w.by.a.r === w.by.b.r).length;
+  $("#togSummary").textContent = both.length
+    ? both.length + (both.length === 1 ? " película vista juntos" : " películas vistas juntos") +
+      (rated.length ? ". Promedio de " + nameOf("a") + ": " + avg("a") + "; de " + nameOf("b") + ": " + avg("b") + ". Misma nota en " + same + " de " + rated.length + "." : ".")
+    : "Todavía no hay películas registradas por ambos. Aparecen solas cuando los dos las registran en Letterboxd.";
+  const item = (w, pendingSlot) => {
+    const li = document.createElement("li");
+    if (w.poster) { const i = document.createElement("img"); i.src = "https://image.tmdb.org/t/p/w92" + w.poster; i.alt = ""; i.loading = "lazy"; li.appendChild(i); }
+    else { const n = document.createElement("span"); n.className = "noimg"; li.appendChild(n); }
+    const body = document.createElement("div"); body.className = "body";
+    const tt = document.createElement("div"); tt.className = "tt"; tt.textContent = w.t + (w.y ? " (" + w.y + ")" : ""); body.appendChild(tt);
+    const e0 = w.by.a || w.by.b;
+    const dt = document.createElement("div"); dt.className = "dt"; dt.textContent = new Date(dayMs(e0.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }); body.appendChild(dt);
+    const rates = document.createElement("div"); rates.className = "rates";
+    ["a", "b"].forEach(sl => {
+      const e = w.by[sl]; if (!e) return;
+      const a = document.createElement(e.u ? "a" : "span"); if (e.u) { a.href = e.u; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      const dot = document.createElement("span"); dot.className = "dot " + sl;
+      const st = document.createElement("span"); st.className = "stars"; st.textContent = stars(e.r);
+      a.append(dot, " " + nameOf(sl) + " ", st); rates.appendChild(a);
+    });
+    body.appendChild(rates);
+    const v = document.createElement("div"); v.className = "verdict";
+    if (pendingSlot) v.textContent = "Si la vieron juntos, falta que " + nameOf(pendingSlot) + " la registre en Letterboxd.";
+    else if (w.by.a.r != null && w.by.b.r != null) {
+      const d = w.by.a.r - w.by.b.r;
+      v.textContent = d === 0 ? "Misma nota." : "+" + String(Math.abs(d)).replace(".", ",") + " de " + nameOf(d > 0 ? "a" : "b") + ".";
+    }
+    if (v.textContent) body.appendChild(v);
+    li.appendChild(body); return li;
+  };
+  $("#togList").replaceChildren(...waiting.map(w => item(w, w.by.a ? "b" : "a")), ...both.slice(0, 200).map(w => item(w)));
 }
 function renderCatalog(){
   $("#catCount").textContent = union().size ? "(" + union().size + ")" : "";
@@ -861,8 +1096,26 @@ function renderFilters(){
   $("#moreCount").textContent = n ? "(" + n + (n === 1 ? " activo)" : " activos)") : "";
   $("#fMinRun").value = String(o.minRun); $("#fMaxRun").value = String(o.maxRun); $("#fMinRating").value = String(o.minRating);
   $("#optMissing").checked = !!o.keepMissing;
+  $("#optMine").checked = !!o.onlyMine;
   $("#clearFilters").disabled = !n;
   if (!$("#moreBox").open) return;
+  // plataformas presentes en sus listas, con cuántas películas tiene cada una
+  const pc = {};
+  for (const f of union().values()) for (const p of (((state.meta[f.k] || {}).providers || {}).stream || [])) pc[p.n] = (pc[p.n] || 0) + 1;
+  o.platforms.forEach(n => { if (!(n in pc)) pc[n] = 0; });
+  const plats = Object.keys(pc).sort((a, b) => pc[b] - pc[a] || a.localeCompare(b));
+  const pbox = $("#platChips");
+  if (!plats.length) pbox.textContent = "Las plataformas aparecen después de la próxima sincronización.";
+  else pbox.replaceChildren(...plats.map(n => {
+    const b = document.createElement("button"), on = o.platforms.includes(n);
+    b.className = "chip" + (on ? " inc" : ""); b.setAttribute("aria-pressed", String(on));
+    b.append(n); const c = document.createElement("small"); c.textContent = pc[n]; b.appendChild(c);
+    b.addEventListener("click", () => {
+      o.platforms = on ? o.platforms.filter(x => x !== n) : [...o.platforms, n];
+      filtersChanged();
+    });
+    return b;
+  }));
   const counts = {};
   for (const f of union().values()) for (const g of catsOf(f)) counts[g] = (counts[g] || 0) + 1;
   const names = CAT_NAMES.filter(g => counts[g] || o.genres[g]);
@@ -882,7 +1135,7 @@ function renderFilters(){
   }));
 }
 function filtersChanged(){ saveOpts(); renderFilters(); renderButtons(); renderStats(); }
-function renderAll(){ renderScope(); renderFilters(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
+function renderAll(){ renderTogether(); renderScope(); renderFilters(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
 
 let toastTimer;
 function toast(msg){
@@ -907,18 +1160,22 @@ function applyMotion(){
 applyMotion();
 matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", applyMotion);
 $("#optMissing").addEventListener("change", e => { state.opts.keepMissing = e.target.checked; filtersChanged(); });
+$("#optMine").addEventListener("change", e => {
+  state.opts.onlyMine = e.target.checked; filtersChanged();
+  if (e.target.checked && !state.opts.platforms.length) toast("Marca arriba las plataformas que tienen.");
+});
 $("#clearFilters").addEventListener("click", () => {
-  Object.assign(state.opts, { minRun:0, maxRun:0, minRating:0, genres:{} }); filtersChanged();
+  Object.assign(state.opts, { minRun:0, maxRun:0, minRating:0, genres:{}, onlyMine:false }); filtersChanged();
 });
 $("#catBox").addEventListener("toggle", () => { if ($("#catBox").open) { renderCatalog(); $("#q").focus({ preventScroll: true }); } });
 $("#again").addEventListener("click", spin);
+$("#duelBtn").addEventListener("click", startDuel);
+$("#togBox").addEventListener("toggle", renderTogether);
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
 document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
   if (spinning) return;
   state.opts.scope = b.dataset.scope; saveOpts(); renderScope(); renderButtons(); renderStats();
 }));
-$("#seen").addEventListener("click", () => mark("seen"));
-$("#veto").addEventListener("click", () => mark("veto"));
 let qTimer; $("#q").addEventListener("input", () => { clearTimeout(qTimer); qTimer = setTimeout(renderCatalog, 120); });
 $("#fixSend").addEventListener("click", () => {
   const f = state.current, url = $("#fixUrl").value.trim();
