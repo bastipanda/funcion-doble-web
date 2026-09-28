@@ -90,6 +90,15 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .scope button:hover:not([aria-checked="true"]){color:var(--ink)}
 .check input:disabled+span{opacity:.45}
 
+/* Pantalla de carga */
+.splash{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;transition:opacity .35s}
+.splash.done{opacity:0;pointer-events:none}
+.splash-in{display:flex;flex-direction:column;align-items:center;width:min(300px,80vw)}
+.splash-title{font-family:var(--display);font-weight:800;font-size:52px;line-height:1;margin-bottom:24px}
+.bar{width:100%;height:6px;border-radius:3px;background:var(--raised);overflow:hidden}
+.bar span{display:block;height:100%;width:0;background:var(--bulb);transition:width .2s}
+#splashText{color:var(--muted);font-size:14px;text-align:center;margin:12px 0 18px;font-variant-numeric:tabular-nums;min-height:21px}
+
 /* Aviso de versión nueva */
 .update-bar{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--raised);border:1.5px solid var(--bulb);
   border-radius:12px;padding:10px 12px;margin-bottom:16px;font-size:14px}
@@ -262,6 +271,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 @media (prefers-reduced-motion:reduce){
   .marquee.spinning::before{animation:none}
   .card.reveal{animation:none}
+  .splash,.bar span{transition:none}
   .duel.enter .pick{animation:none}
   .force-motion .duel.enter .pick{animation:rise .4s ease-out backwards}
   .force-motion .marquee.spinning::before{animation:chase .32s linear infinite}
@@ -271,6 +281,14 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 </style>
 </head>
 <body>
+<div class="splash" id="splash" role="status" aria-live="polite">
+  <div class="splash-in">
+    <div class="splash-title">Ruletaboxd</div>
+    <div class="bar"><span id="splashBar"></span></div>
+    <p id="splashText">Conectando…</p>
+    <button id="splashSkip" class="mini ghost">Saltar</button>
+  </div>
+</div>
 <main>
   <div class="update-bar" id="updateBar" hidden>
     <span>Hay una versión nueva de la página.</span>
@@ -472,13 +490,17 @@ async function firebaseStore(){
   let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, cb = null;
   const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
+  let gotLists = false, gotMeta = false, readyRes;
+  const ready = new Promise(r => { readyRes = r; });
+  const checkReady = () => { if (gotLists && gotMeta) readyRes(); };
   return {
     kind:"firebase",
+    ready,
     subscribe(fn, onErr){
       cb = fn;
-      F.onSnapshot(F.query(F.collection(db, "lists"), F.limit(10)), s => { lists = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "lists"), F.limit(10)), s => { lists = toMap(s); gotLists = true; checkReady(); emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "marks"), F.limit(3000)), s => { marks = toMap(s); emit(); }, onErr);
-      F.onSnapshot(F.query(F.collection(db, "meta"), F.limit(3000)), s => { meta = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "meta"), F.limit(3000)), s => { meta = toMap(s); gotMeta = true; checkReady(); emit(); }, onErr);
       F.onSnapshot(F.doc(db, "log", "spins"), s => { spins = s.exists() ? (s.data().items || []) : []; emit(); }, onErr);
       F.onSnapshot(F.doc(db, "status", "sync"), s => { status = s.exists() ? s.data() : null; emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "watched"), F.limit(3000)), s => { watched = toMap(s); emit(); }, onErr);
@@ -507,6 +529,7 @@ function localStore(){
   };
   return {
     kind:"local",
+    ready: Promise.resolve(),
     subscribe(fn){ cb = fn; emit(); },
     async setList(slot, data){ d.lists[slot] = { ...(d.lists[slot] || {}), ...data }; emit(); },
     async setMark(k, m){ d.marks[k] = m; emit(); },
@@ -865,6 +888,7 @@ async function spin(){
   const { pool } = computePool();
   if (!pool.length) { toast(activeFilters() ? "Ninguna película cumple estos filtros." : state.opts.scope === "all" ? "No queda ninguna película en juego." : "No queda ninguna película en juego en esta selección."); return; }
   const chosen = pick(pool);
+  warmCard(chosen);   // la foto de la ficha descarga mientras la ruleta gira
   spinning = true; renderButtons();
   $("#card").hidden = true; $("#card").classList.remove("reveal");
   const hint = $("#hint"), strip = $("#strip"), marquee = $("#marquee"), tr = $("#track");
@@ -950,6 +974,7 @@ function startDuel(fromShort){
     while (picks.length < 3 && left.length) { const f = pick(left); picks.push(f); left.splice(left.findIndex(x => x.f === f), 1); }
   }
   const first = rnd() < 0.5 ? "a" : "b", second = first === "a" ? "b" : "a";
+  picks.forEach(warmCard);
   duel = { picks, turns: Array.from({ length: picks.length - 1 }, (_, i) => i % 2 ? second : first), out: [] };
   spinning = true; state.current = null;
   $("#card").hidden = true; $("#strip").hidden = true;
@@ -1455,7 +1480,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-28-1";
+const APP_VERSION = "2026-09-28-2";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
@@ -1478,7 +1503,7 @@ function schedulePreload(){
   clearTimeout(preloadTimer);
   preloadTimer = setTimeout(() => {
     if (navigator.connection && navigator.connection.saveData) return;
-    const urls = computePool().pool.map(x => posterOf(x.f)).filter(u => u && !preloaded.has(u)).slice(0, 150 - preloaded.size);
+    const urls = computePool().pool.map(x => posterOf(x.f)).filter(u => u && !preloaded.has(u)).slice(0, Math.max(0, 600 - preloaded.size));
     let i = 0;
     const step = () => {
       for (let n = 0; n < 6 && i < urls.length; n++, i++) { const img = new Image(); img.decoding = "async"; img.src = urls[i]; preloaded.add(urls[i]); }
@@ -1487,6 +1512,47 @@ function schedulePreload(){
     step();
   }, 1500);
 }
+
+/* ---------- pantalla de carga ----------
+   Espera los datos y descarga afiches y logos antes de mostrar la página, para que no haya
+   tarjetas vacías. Las fotos grandes de las fichas no se descargan todas (serían decenas de MB):
+   la de la película elegida se descarga mientras la ruleta gira. Tope de 30 s; "Saltar" en cualquier momento.
+   El navegador guarda las imágenes, así que desde la segunda vez es casi instantánea. */
+function warmCard(f){
+  const m = state.meta[f.k] || {}, p = m.backdrop || m.poster;
+  if (p) { const i = new Image(); i.decoding = "async"; i.src = "https://image.tmdb.org/t/p/" + (m.backdrop ? "w780" : "w342") + p; }
+}
+function loadImg(url, ms){
+  return new Promise(res => {
+    const i = new Image(), t = setTimeout(res, ms);
+    i.onload = i.onerror = () => { clearTimeout(t); res(); };
+    i.decoding = "async"; i.src = url;
+  });
+}
+let bootDone = false;
+function finishSplash(){
+  if (bootDone) return; bootDone = true;
+  const sp = $("#splash"); sp.classList.add("done"); setTimeout(() => sp.remove(), 450);
+  renderAll();
+}
+async function preloadAll(){
+  const urls = new Set();
+  for (const f of union().values()) {
+    const u = posterOf(f); if (u) urls.add(u);
+    for (const p of (((state.meta[f.k] || {}).providers || {}).stream || [])) if (p.l) urls.add("https://image.tmdb.org/t/p/w45" + p.l);
+  }
+  const list = [...urls].filter(u => !preloaded.has(u));
+  let done = 0;
+  const show = () => {
+    $("#splashBar").style.width = (list.length ? Math.round(100 * done / list.length) : 100) + "%";
+    $("#splashText").textContent = list.length ? "Descargando afiches: " + done + " de " + list.length : "Listo";
+  };
+  show();
+  let i = 0;
+  const worker = async () => { while (i < list.length && !bootDone) { const u = list[i++]; preloaded.add(u); await loadImg(u, 8000); done++; show(); } };
+  await Promise.all(Array.from({ length: 8 }, worker));
+}
+$("#splashSkip").addEventListener("click", finishSplash);
 
 /* ---------- arranque ---------- */
 renderAll();
@@ -1500,6 +1566,10 @@ renderAll();
     if (!spinning) renderAll(); else { renderLists(); renderMarks(); renderStats(); renderCatalog(); renderRows(); }
   }, () => toast("Se perdió la conexión con la base de datos. Recarga la página."));
   renderAll();
+  $("#splashText").textContent = "Cargando la cartelera…";
+  await Promise.race([store.ready, wait(8000)]);
+  if (!(navigator.connection && navigator.connection.saveData)) await Promise.race([preloadAll(), wait(30000)]);
+  finishSplash();
 })();
 </script>
 </body>
