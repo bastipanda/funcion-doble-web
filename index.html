@@ -32,6 +32,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
 details *,details *::before,details *::after{box-sizing:border-box}
+[hidden]{display:none !important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 main{max-width:680px;margin:0 auto;padding:24px 16px 64px}
 a{color:inherit}
@@ -147,12 +148,15 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .duel-btn{width:100%;margin-top:8px;border-color:var(--muted)}
 .duel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:4px 4px 0}
 .duel[hidden]{display:none}
-.duel .pick{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;padding:0;border:none;background:none;min-height:0;
+.duel .pick{position:relative;min-width:0}
+.duel .pick-veto{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;width:100%;padding:0;border:none;background:none;min-height:0;
   color:var(--marquee-ink);font-size:13px;font-weight:500;text-align:center;border-radius:10px}
+.duel .pick-info{position:absolute;top:6px;right:6px;z-index:2;min-height:28px;padding:3px 10px;font-size:12px;border-radius:999px;
+  background:rgba(14,17,20,.85);border-color:var(--bulb);color:var(--bulb)}
 .duel .pick .tile{width:100%;height:auto;aspect-ratio:2/3;opacity:1;font-size:16px}
 .duel .pick .cap{line-height:1.2;overflow-wrap:anywhere}
 .duel .pick .who{font-size:12px;color:var(--danger);min-height:15px}
-.duel .pick:disabled{opacity:1}
+.duel .pick-veto:disabled{opacity:1}
 .duel .pick.out .tile{color:transparent}
 .duel .pick.out .tile img{opacity:.22;filter:grayscale(1)}
 .duel .pick.out .cap{opacity:.45}
@@ -364,6 +368,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <a id="open" class="btn" target="_blank" rel="noopener noreferrer" aria-disabled="true">Ver en Letterboxd</a>
     </div>
     <button id="again" class="again">Girar de nuevo</button>
+    <button id="backDuel" class="again" hidden>Volver al duelo</button>
     <details class="fix" id="fix">
       <summary>¿Los datos son de otra película?</summary>
       <p class="hint" style="margin:8px 0 0">Pega el link correcto de TMDB o de Letterboxd. Se corrige en la próxima sincronización.</p>
@@ -857,12 +862,30 @@ async function spin(){
   write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
 }
 let duel = null;
-function pickTile(f){
-  const b = document.createElement("button"); b.className = "pick"; b.type = "button";
-  const t = tileEl(f); t.classList.add("win-able");
+function pickTile(f, i){
+  const wrap = document.createElement("div"); wrap.className = "pick";
+  const v = document.createElement("button"); v.type = "button"; v.className = "pick-veto";
+  v.setAttribute("aria-label", "Vetar " + f.t);
   const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = f.t;
   const who = document.createElement("span"); who.className = "who";
-  b.append(t, cap, who); return b;
+  v.append(tileEl(f), cap, who);
+  v.addEventListener("click", () => veto(i));
+  const info = document.createElement("button"); info.type = "button"; info.className = "pick-info"; info.textContent = "Ficha";
+  info.setAttribute("aria-label", "Ver ficha de " + f.t);
+  info.addEventListener("click", () => previewDuel(f));
+  wrap.append(v, info);
+  return wrap;
+}
+let duelPreview = null;
+function previewDuel(f){
+  // muestra la ficha sin vetar: el duelo sigue esperando arriba
+  duelPreview = union().get(f.k) || f;
+  renderCard(duelPreview);
+  $("#again").hidden = true; $("#backDuel").hidden = false;
+  renderButtons(); renderRows();
+  const card = $("#card");
+  card.classList.remove("reveal"); void card.offsetWidth; card.classList.add("reveal");
+  card.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
 }
 const DUEL_MAX = 6;
 function startDuel(fromShort){
@@ -888,7 +911,7 @@ function startDuel(fromShort){
   box.classList.remove("enter"); void box.offsetWidth; box.classList.add("enter");
   const cancel = document.createElement("button"); cancel.className = "duel-cancel"; cancel.textContent = "Cancelar duelo";
   cancel.addEventListener("click", () => endDuel(null));
-  box.replaceChildren(...picks.map((f, i) => { const b = pickTile(f); b.addEventListener("click", () => veto(i)); return b; }), cancel);
+  box.replaceChildren(...picks.map((f, i) => pickTile(f, i)), cancel);
   duelHint(); renderButtons();
   $("#marquee").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "nearest" });
 }
@@ -902,18 +925,20 @@ async function veto(i){
   const slot = duel.turns[duel.out.length];
   duel.out.push(i);
   const b = $("#duel").children[i];
-  b.classList.add("out"); b.disabled = true; b.querySelector(".who").textContent = "vetó " + nameOf(slot);
+  b.classList.add("out"); b.querySelector(".pick-veto").disabled = true; b.querySelector(".who").textContent = "vetó " + nameOf(slot);
+  if (duelPreview && duelPreview.k === duel.picks[i].k) { duelPreview = null; $("#card").hidden = true; $("#backDuel").hidden = true; }
   if (duel.out.length < need) { duelHint(); return; }
   const wi = duel.picks.findIndex((_, x) => !duel.out.includes(x)), winner = duel.picks[wi];
-  const wb = $("#duel").children[wi]; wb.classList.add("win"); wb.disabled = true;
-  [...$("#duel").children].forEach(c => { c.disabled = true; });
+  $("#duel").children[wi].classList.add("win");
+  $("#duel").querySelectorAll("button").forEach(c => { c.disabled = true; });
   $("#hint").textContent = "Queda " + winner.t;
   await wait(reduceMotion() ? 300 : 1100);
   endDuel(winner);
 }
 function endDuel(winner){
   const w = winner && winner.k ? winner : null;
-  duel = null; spinning = false;
+  duel = null; spinning = false; duelPreview = null;
+  $("#backDuel").hidden = true; $("#again").hidden = false;
   $("#duel").hidden = true; $("#duel").replaceChildren(); $("#duel").style.gridTemplateColumns = ""; $("#strip").hidden = false;
   if (w) {
     state.current = w; stripShow(w);
@@ -922,7 +947,7 @@ function endDuel(winner){
     const entry = { k: w.k, t: w.t, at: Date.now() };
     if (w.y) entry.y = w.y;
     write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
-  } else { $("#hint").textContent = ""; buildIdle(true); renderCurrent(); }
+  } else { $("#hint").textContent = ""; $("#card").hidden = true; buildIdle(true); renderCurrent(); }
   renderButtons();
 }
 function shortFilms(){
@@ -960,12 +985,12 @@ function renderRows(){
   $("#shortRow").replaceChildren(...sf.map(thumbEl));
   $("#recentBlock").hidden = !rf.length;
   $("#recentRow").replaceChildren(...rf.map(thumbEl));
-  const f = state.current, on = !!(f && state.shortlist && state.shortlist[f.k]);
+  const f = duelPreview || state.current, on = !!(f && state.shortlist && state.shortlist[f.k]);
   $("#tinca").setAttribute("aria-pressed", String(on));
   $("#tinca").textContent = on ? "Me tinca, marcada" : "Me tinca";
 }
 async function toggleTinca(){
-  const f = state.current; if (!f) return;
+  const f = duelPreview || state.current; if (!f) return;
   if (state.shortlist[f.k]) await write(() => store.delShort(f.k), "Quitada de Me tinca.");
   else {
     const data = { t: f.t, at: Date.now() }; if (f.y) data.y = f.y;
@@ -1088,13 +1113,13 @@ function renderButtons(){
   $("#spin").disabled = spinning || !pool.length;
   $("#spin").textContent = spinning && !duel ? "Girando…" : "Girar";
   $("#duelBtn").disabled = spinning || pool.length < 3;
-  const has = !!state.current && !spinning;
+  const cur = duelPreview || state.current, has = !!cur && (!spinning || !!duelPreview);
   $("#again").disabled = spinning || !pool.length;
   const setLink = (a, url) => { if (url) { a.href = url; a.setAttribute("aria-disabled", "false"); } else { a.removeAttribute("href"); a.setAttribute("aria-disabled", "true"); } };
-  setLink($("#open"), has ? linkOf(state.current) : null);
-  const tr = has && (state.meta[state.current.k] || {}).trailer;
+  setLink($("#open"), has ? linkOf(cur) : null);
+  const tr = has && (state.meta[cur.k] || {}).trailer;
   setLink($("#trailer"), tr ? "https://www.youtube.com/watch?v=" + encodeURIComponent(tr) : null);
-  $("#trailer").textContent = has && !tr && (state.meta[state.current.k] || {}).tmdbAt ? "Sin tráiler" : "Ver tráiler";
+  $("#trailer").textContent = has && !tr && (state.meta[cur.k] || {}).tmdbAt ? "Sin tráiler" : "Ver tráiler";
 }
 function relaxHints(){
   // cuántas habría si se quitara cada filtro por separado
@@ -1339,6 +1364,7 @@ $("#duelBtn").addEventListener("click", () => startDuel(false));
 $("#shortDuel").addEventListener("click", () => startDuel(true));
 $("#shortClear").addEventListener("click", clearShort);
 $("#tinca").addEventListener("click", toggleTinca);
+$("#backDuel").addEventListener("click", () => $("#marquee").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" }));
 $("#togBox").addEventListener("toggle", renderTogether);
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
 document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
