@@ -431,7 +431,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <summary><h2>Vistas juntos</h2><span class="catcount" id="togCount"></span><span class="chev" aria-hidden="true"></span></summary>
       <p class="tog-sum" id="togSummary"></p>
       <ul class="together" id="togList"></ul>
-      <p class="hint">Sale de los diarios de Letterboxd: cuenta como vista juntos cuando ambos registran la misma película con hasta 3 días de diferencia. Toca una nota para abrir esa reseña.</p>
+      <p class="hint">Sale de los diarios de Letterboxd: cuenta como vista juntos cuando ambos registran la misma película con hasta 3 días de diferencia. Toca una nota para abrir ese registro. Para traer el historial completo, cada uno sube su exportación de Letterboxd en su lista (el .zip trae el diario). Lo guardado aquí es permanente: no cambia aunque cambien usuarios o importaciones.</p>
     </details>
   </section>
 
@@ -451,7 +451,7 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
-const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, spins:[], status:null, current:null, mode:"loading",
+const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, together:{}, spins:[], status:null, current:null, mode:"loading",
   opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false, catSort:"title" } };
 let store = null, spinning = false;
 
@@ -469,8 +469,8 @@ async function firebaseStore(){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
-  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, cb = null;
-  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist} });
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
   return {
     kind:"firebase",
@@ -483,6 +483,7 @@ async function firebaseStore(){
       F.onSnapshot(F.doc(db, "status", "sync"), s => { status = s.exists() ? s.data() : null; emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "watched"), F.limit(3000)), s => { watched = toMap(s); emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "shortlist"), F.limit(200)), s => { shortlist = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "together"), F.limit(3000)), s => { together = toMap(s); emit(); }, onErr);
     },
     setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
     setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
@@ -490,7 +491,8 @@ async function firebaseStore(){
     setSpins:(arr) => F.setDoc(F.doc(db, "log", "spins"), { items: arr }),
     requestFix:(k, url) => F.setDoc(F.doc(db, "fixes", k), { url, at: Date.now() }),
     addShort:(k, data) => F.setDoc(F.doc(db, "shortlist", k), data),
-    delShort:(k) => F.deleteDoc(F.doc(db, "shortlist", k))
+    delShort:(k) => F.deleteDoc(F.doc(db, "shortlist", k)),
+    setDiary:(slot, data) => F.setDoc(F.doc(db, "diaryImport", slot), data)
   };
 }
 function localStore(){
@@ -501,7 +503,7 @@ function localStore(){
   let cb = null;
   const emit = () => {
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
-    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist} });
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist}, together:{} });
   };
   return {
     kind:"local",
@@ -512,7 +514,8 @@ function localStore(){
     async setSpins(arr){ d.spins = arr; emit(); },
     async requestFix(){ throw { code:"local" }; },
     async addShort(k, data){ d.shortlist[k] = data; emit(); },
-    async delShort(k){ delete d.shortlist[k]; emit(); }
+    async delShort(k){ delete d.shortlist[k]; emit(); },
+    async setDiary(){ throw { code:"local" }; }
   };
 }
 async function write(fn, okMsg){
@@ -598,17 +601,51 @@ function parseWatchlist(text){
   }
   return out;
 }
+function parseDiary(text){
+  // diary.csv de Letterboxd: Date, Name, Year, Letterboxd URI, Rating, Rewatch, Tags, Watched Date
+  const rows = parseCSV(text);
+  if (!rows.length) return null;
+  const h = rows[0].map(x => x.trim().toLowerCase());
+  const iN = h.indexOf("name"), iY = h.indexOf("year"), iU = h.indexOf("letterboxd uri"), iR = h.indexOf("rating"),
+        iW = h.indexOf("watched date"), iD = h.indexOf("date");
+  if (iN < 0 || (iW < 0 && iD < 0)) return null;
+  const out = [];
+  for (const r of rows.slice(1)) {
+    const n = (r[iN] || "").trim(), d = ((iW >= 0 && r[iW]) || (iD >= 0 && r[iD]) || "").trim();
+    if (!n || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    const e = { n, d };
+    const y = iY >= 0 ? (r[iY] || "").trim() : ""; if (y) e.y = y;
+    const rt = iR >= 0 ? parseFloat(r[iR]) : NaN; if (!isNaN(rt)) e.r = rt;
+    const u = iU >= 0 ? (r[iU] || "").trim() : ""; if (u) e.u = u;
+    out.push(e);
+  }
+  return out;
+}
+async function importDiary(slot, text, box){
+  const entries = parseDiary(text);
+  if (!entries || !entries.length) return false;
+  const data = { user: box.querySelector("input.user").value.trim() || (state.lists[slot] || {}).user || "", entries, at: Date.now() };
+  if (JSON.stringify(data).length > 900000) { toast("El diario es demasiado grande para guardarlo."); return true; }
+  await write(() => store.setDiary(slot, data), nameOf(slot) + ": diario con " + entries.length + " registros importado. Las vistas juntos anteriores aparecen tras la próxima sincronización.");
+  return true;
+}
 async function importFile(slot, file, box){
-  let text;
+  let text, diaryText = null;
   try {
     if (/\.zip$/i.test(file.name) || /zip/.test(file.type)) {
       if (!window.JSZip) { toast("No se pudo abrir el .zip. Sube el watchlist.csv que viene adentro."); return; }
       const zip = await window.JSZip.loadAsync(file);
-      const c = Object.values(zip.files)
-        .filter(z => !z.dir && /(^|\/)watchlist\.csv$/i.test(z.name) && !/(^|\/)deleted\//i.test(z.name))
-        .sort((a, b) => a.name.split("/").length - b.name.split("/").length);
-      if (!c.length) { toast("El .zip no trae un watchlist.csv."); return; }
-      text = await c[0].async("string");
+      const find = re => Object.values(zip.files)
+        .filter(z => !z.dir && re.test(z.name) && !/(^|\/)deleted\//i.test(z.name))
+        .sort((a, b) => a.name.split("/").length - b.name.split("/").length)[0];
+      const w = find(/(^|\/)watchlist\.csv$/i), dy = find(/(^|\/)diary\.csv$/i);
+      if (dy) diaryText = await dy.async("string");
+      if (!w) { if (diaryText) await importDiary(slot, diaryText, box); else toast("El .zip no trae un watchlist.csv."); return; }
+      text = await w.async("string");
+    } else if (/diary/i.test(file.name)) {
+      const t = await file.text();
+      if (!(await importDiary(slot, t, box))) toast("No reconozco ese diary.csv.");
+      return;
     } else text = await file.text();
   } catch(e){ toast("No se pudo leer el archivo."); return; }
   const films = parseWatchlist(text);
@@ -618,6 +655,7 @@ async function importFile(slot, file, box){
   const data = { name, films, updatedAt: Date.now(), source: "csv" };
   if (JSON.stringify(data).length > 900000) { toast("La lista supera el tamaño que la base puede guardar."); return; }
   await write(() => store.setList(slot, data), name + ": " + films.length + " películas cargadas.");
+  if (diaryText) await importDiary(slot, diaryText, box);
 }
 
 /* ---------- sorteo ---------- */
@@ -1200,10 +1238,13 @@ const stars = r => r == null ? "sin nota" : "★".repeat(Math.floor(r)) + (r % 1
 function renderTogether(){
   const W = Object.values(state.watched || {});
   const dayMs = d => Date.parse(d + "T12:00:00Z");
-  const both = W.filter(w => w.by && w.by.a && w.by.b && Math.abs(dayMs(w.by.a.d) - dayMs(w.by.b.d)) <= 3 * DAY)
-    .sort((x, y) => (y.by.a.d > y.by.b.d ? y.by.a.d : y.by.b.d).localeCompare(x.by.a.d > x.by.b.d ? x.by.a.d : x.by.b.d));
+  // registros permanentes, guardados por la tarea; se adaptan a la forma que usa la lista
+  const both = Object.values(state.together || {}).filter(t => t.a && t.b)
+    .map(t => ({ t: t.t, y: t.y, poster: t.poster, tmdbId: t.tmdbId, d: t.d, by: { a: t.a, b: t.b } }))
+    .sort((x, y) => (y.d || "").localeCompare(x.d || ""));
   const recent = Date.now() - 7 * DAY;
-  const waiting = W.filter(w => w.by && (!!w.by.a !== !!w.by.b) && dayMs((w.by.a || w.by.b).d) >= recent);
+  const pairedRecently = new Set(both.filter(p => dayMs(p.d) >= recent - 7 * DAY).map(p => p.tmdbId));
+  const waiting = W.filter(w => w.by && (!!w.by.a !== !!w.by.b) && dayMs((w.by.a || w.by.b).d) >= recent && !pairedRecently.has(w.tmdbId));
   $("#togCount").textContent = both.length ? "(" + both.length + ")" : "";
   if (!$("#togBox").open) return;
   const rated = both.filter(w => w.by.a.r != null && w.by.b.r != null);
@@ -1414,7 +1455,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-27-2";
+const APP_VERSION = "2026-09-28-1";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
