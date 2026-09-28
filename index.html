@@ -25,6 +25,7 @@
 }
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
+details *,details *::before,details *::after{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--text);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
 main{max-width:680px;margin:0 auto;padding:24px 16px 64px}
 a{color:inherit}
@@ -80,6 +81,27 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .scope button[aria-checked="true"]{background:var(--raised);color:var(--ink)}
 .scope button:hover:not([aria-checked="true"]){color:var(--ink)}
 .check input:disabled+span{opacity:.45}
+
+/* Más filtros */
+.more-box{background:var(--panel);border:1.5px solid var(--raised);border-radius:12px;padding:0 14px;margin:0 0 10px}
+.more-box>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:46px;cursor:pointer;font-weight:600}
+.more-box>summary::-webkit-details-marker{display:none}
+.more-box[open]>summary{border-bottom:1px solid var(--line);margin-bottom:12px}
+.more-box[open]>summary .chev{transform:rotate(-135deg)}
+.more-box[open]{padding-bottom:14px}
+.more-count{color:var(--bulb);font-weight:500;font-size:14px}
+.more-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.more-grid label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
+.more-grid select{min-width:0;font:inherit;font-size:15px;color:var(--ink);background:var(--bg);border:1.5px solid var(--raised);border-radius:8px;padding:9px 8px;width:100%}
+.sub{margin:14px 0 8px;font-weight:600}
+.sub span{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{min-height:36px;padding:6px 12px;border-radius:999px;font-size:14px;font-weight:500}
+.chip small{color:var(--muted);margin-left:4px;font-weight:400}
+.chip.inc{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip.inc small{color:var(--accent-ink);opacity:.7}
+.chip.exc{border-color:var(--danger);color:var(--danger);text-decoration:line-through}
+.clear{width:100%;margin-top:8px}
 
 /* Ficha */
 .card-head{margin:0 0 14px}
@@ -186,6 +208,38 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     <button role="radio" data-scope="both">En común</button>
   </div>
 
+  <details class="more-box" id="moreBox">
+    <summary><span>Más filtros</span><span class="more-count" id="moreCount"></span><span class="chev" aria-hidden="true"></span></summary>
+    <div class="more-grid">
+      <label>Duración mínima
+        <select id="fMinRun">
+          <option value="0">Sin mínimo</option><option value="60">1:00</option><option value="75">1:15</option>
+          <option value="90">1:30</option><option value="105">1:45</option><option value="120">2:00</option><option value="150">2:30</option>
+        </select>
+      </label>
+      <label>Duración máxima
+        <select id="fMaxRun">
+          <option value="0">Sin máximo</option><option value="90">1:30</option><option value="100">1:40</option>
+          <option value="110">1:50</option><option value="120">2:00</option><option value="135">2:15</option>
+          <option value="150">2:30</option><option value="180">3:00</option>
+        </select>
+      </label>
+      <label>Rating Letterboxd
+        <select id="fMinRating">
+          <option value="0">Cualquiera</option><option value="3">3,0 o más</option><option value="3.3">3,3 o más</option>
+          <option value="3.5">3,5 o más</option><option value="3.7">3,7 o más</option><option value="3.9">3,9 o más</option>
+          <option value="4.1">4,1 o más</option>
+        </select>
+      </label>
+    </div>
+    <p class="sub">Géneros <span>Toca una vez para incluir, dos para excluir, tres para quitar.</span></p>
+    <div class="chips" id="genreChips"></div>
+    <label class="check"><input type="checkbox" id="optMissing"><span>Incluir películas a las que les falta el dato filtrado (duración, rating o género)</span></label>
+    <label class="check"><input type="checkbox" id="optDouble"><span>Con "Todas", las que están en ambas listas tienen el doble de probabilidad</span></label>
+    <label class="check"><input type="checkbox" id="optRepeat"><span>No repetir las últimas 10 que salieron</span></label>
+    <button id="clearFilters" class="clear">Limpiar filtros</button>
+  </details>
+
   <div class="actions">
     <button id="spin" class="primary" disabled>Girar</button>
     <p id="stats" class="stats"></p>
@@ -203,6 +257,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <div><dt>Duración</dt><dd id="fRun"></dd></div>
       <div><dt>En la watchlist</dt><dd id="fAdded"></dd></div>
       <div><dt>Rating</dt><dd id="fRating"></dd></div>
+      <div><dt>Género</dt><dd id="fGenre"></dd></div>
     </dl>
     <section>
       <h3>Sinopsis</h3>
@@ -228,12 +283,6 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <ul class="catalog" id="catalog"></ul>
       <p class="more" id="catMore"></p>
     </details>
-  </section>
-
-  <section class="block">
-    <h2>Reglas del sorteo</h2>
-    <label class="check"><input type="checkbox" id="optDouble"><span>Con "Todas", las que están en ambas listas tienen el doble de probabilidad</span></label>
-    <label class="check"><input type="checkbox" id="optRepeat"><span>No repetir las últimas 10 que salieron</span></label>
   </section>
 
   <section class="block">
@@ -276,7 +325,7 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
 const state = { lists:{}, marks:{}, meta:{}, spins:[], status:null, current:null, mode:"loading",
-  opts:{ double:true, noRepeat:true, scope:"all" } };
+  opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true } };
 let store = null, spinning = false;
 
 /* ---------- preferencias por dispositivo ---------- */
@@ -284,6 +333,7 @@ const OPT_KEY = "funcion-doble:opts";
 try { const o = JSON.parse(localStorage.getItem(OPT_KEY)); if (o) Object.assign(state.opts, o); } catch(e){}
 if (state.opts.onlyBoth) { state.opts.scope = "both"; delete state.opts.onlyBoth; }
 if (!["all","a","b","both"].includes(state.opts.scope)) state.opts.scope = "all";
+if (!state.opts.genres || typeof state.opts.genres !== "object") state.opts.genres = {};
 const saveOpts = () => { try { localStorage.setItem(OPT_KEY, JSON.stringify(state.opts)); } catch(e){} };
 
 /* ---------- almacenamiento ---------- */
@@ -456,6 +506,32 @@ function inScope(f){
   if (sc === "both") return f.owners.length > 1;
   return f.owners.some(o => o.slot === sc);
 }
+function activeFilters(){
+  const o = state.opts;
+  return (o.minRun ? 1 : 0) + (o.maxRun ? 1 : 0) + (o.minRating ? 1 : 0) + Object.keys(o.genres).length;
+}
+function passes(f){
+  const o = state.opts, m = state.meta[f.k] || {}, keep = o.keepMissing;
+  if (o.minRun || o.maxRun) {
+    if (!m.runtime) { if (!keep) return false; }
+    else if ((o.minRun && m.runtime < o.minRun) || (o.maxRun && m.runtime > o.maxRun)) return false;
+  }
+  if (o.minRating) {
+    if (!m.lbRating) { if (!keep) return false; }
+    else if (m.lbRating < o.minRating) return false;
+  }
+  const inc = Object.keys(o.genres).filter(g => o.genres[g] === 1);
+  const exc = Object.keys(o.genres).filter(g => o.genres[g] === -1);
+  if (inc.length || exc.length) {
+    const gs = m.genres || [];
+    if (!gs.length) { if (!keep) return false; }
+    else {
+      if (exc.some(g => gs.includes(g))) return false;
+      if (inc.length && !inc.some(g => gs.includes(g))) return false;
+    }
+  }
+  return true;
+}
 function computePool(){
   const all = union(); let both = 0; const base = [];
   const dbl = state.opts.scope === "all" && state.opts.double;
@@ -463,7 +539,7 @@ function computePool(){
     if (isOut(f.k)) continue;
     const isBoth = f.owners.length > 1;
     if (isBoth) both++;
-    if (!inScope(f)) continue;
+    if (!inScope(f) || !passes(f)) continue;
     base.push({ f, w: isBoth && dbl ? 2 : 1 });
   }
   let pool = base;
@@ -524,7 +600,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 async function spin(){
   if (spinning) return;
   const { pool } = computePool();
-  if (!pool.length) { toast(state.opts.scope === "all" ? "No queda ninguna película en juego." : "No queda ninguna película en juego en esta selección."); return; }
+  if (!pool.length) { toast(activeFilters() ? "Ninguna película cumple estos filtros." : state.opts.scope === "all" ? "No queda ninguna película en juego." : "No queda ninguna película en juego en esta selección."); return; }
   const chosen = pick(pool);
   spinning = true; renderButtons();
   $("#card").hidden = true; $("#card").classList.remove("reveal");
@@ -624,6 +700,7 @@ function renderCard(f){
   $("#fYear").textContent = f.y || (m.release ? m.release.slice(0, 4) : "—");
   $("#fDir").textContent = m.directors && m.directors.length ? m.directors.join(", ") : (m.tmdbId ? "—" : "…");
   $("#fRun").textContent = m.runtime ? hhmm(m.runtime) : (m.tmdbId ? "—" : "…");
+  $("#fGenre").textContent = m.genres && m.genres.length ? m.genres.join(", ") : (m.tmdbId ? "—" : "…");
   const rt = $("#fRating"); rt.replaceChildren();
   const rsrc = t => { const x = document.createElement("small"); x.className = "rsrc"; x.textContent = t; return x; };
   const nfmt = n => n.toLocaleString("es-CL");
@@ -728,7 +805,34 @@ function renderScope(){
   });
   $("#optDouble").disabled = state.opts.scope !== "all";
 }
-function renderAll(){ renderScope(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
+function renderFilters(){
+  const n = activeFilters(), o = state.opts;
+  $("#moreCount").textContent = n ? "(" + n + (n === 1 ? " activo)" : " activos)") : "";
+  $("#fMinRun").value = String(o.minRun); $("#fMaxRun").value = String(o.maxRun); $("#fMinRating").value = String(o.minRating);
+  $("#optMissing").checked = !!o.keepMissing;
+  $("#clearFilters").disabled = !n;
+  if (!$("#moreBox").open) return;
+  const counts = {};
+  for (const f of union().values()) for (const g of ((state.meta[f.k] || {}).genres || [])) counts[g] = (counts[g] || 0) + 1;
+  Object.keys(o.genres).forEach(g => { if (!(g in counts)) counts[g] = 0; });
+  const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+  const box = $("#genreChips");
+  if (!names.length) { box.textContent = "Los géneros aparecen cuando las fichas estén completas."; return; }
+  box.replaceChildren(...names.map(g => {
+    const b = document.createElement("button"), st = o.genres[g] || 0;
+    b.className = "chip" + (st === 1 ? " inc" : st === -1 ? " exc" : "");
+    b.setAttribute("aria-label", g + (st === 1 ? ": incluido" : st === -1 ? ": excluido" : ": sin filtrar"));
+    b.append(g); const c = document.createElement("small"); c.textContent = counts[g]; b.appendChild(c);
+    b.addEventListener("click", () => {
+      const next = st === 0 ? 1 : st === 1 ? -1 : 0;
+      if (next) o.genres[g] = next; else delete o.genres[g];
+      filtersChanged();
+    });
+    return b;
+  }));
+}
+function filtersChanged(){ saveOpts(); renderFilters(); renderButtons(); renderStats(); }
+function renderAll(){ renderScope(); renderFilters(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
 
 let toastTimer;
 function toast(msg){
@@ -738,6 +842,14 @@ function toast(msg){
 
 /* ---------- eventos ---------- */
 $("#spin").addEventListener("click", spin);
+$("#moreBox").addEventListener("toggle", renderFilters);
+[["#fMinRun","minRun"],["#fMaxRun","maxRun"],["#fMinRating","minRating"]].forEach(([sel, key]) => {
+  $(sel).addEventListener("change", e => { state.opts[key] = parseFloat(e.target.value) || 0; filtersChanged(); });
+});
+$("#optMissing").addEventListener("change", e => { state.opts.keepMissing = e.target.checked; filtersChanged(); });
+$("#clearFilters").addEventListener("click", () => {
+  Object.assign(state.opts, { minRun:0, maxRun:0, minRating:0, genres:{} }); filtersChanged();
+});
 $("#catBox").addEventListener("toggle", () => { if ($("#catBox").open) { renderCatalog(); $("#q").focus({ preventScroll: true }); } });
 $("#again").addEventListener("click", spin);
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
