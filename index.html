@@ -56,6 +56,7 @@ h3{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.1;mar
 .tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .tile.win{opacity:1;transform:scale(1.07);box-shadow:0 0 0 3px var(--bulb),0 0 28px rgba(242,192,99,.5)}
 .strip.rolling .tile{opacity:.85}
+.strip.solo .tile:not(:nth-child(4)){visibility:hidden}
 .meta{min-height:24px;text-align:center;font-size:14px;color:var(--marquee-muted);margin:6px 0 0}
 .owner{display:inline-flex;align-items:center;gap:6px}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
@@ -120,6 +121,7 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .card[hidden]{display:none}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:12px;margin:0 0 16px}
 .facts div{min-width:0}
+.facts .wide{grid-column:1/-1}
 .facts dt{font-size:13px;color:var(--muted)}
 .facts dd{margin:2px 0 0;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .rsrc{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px}
@@ -185,6 +187,8 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 @media (prefers-reduced-motion:reduce){
   .marquee.spinning::before{animation:none}
   .card.reveal{animation:none}
+  .force-motion .marquee.spinning::before{animation:chase .32s linear infinite}
+  .force-motion .card.reveal{animation:rise .45s ease-out}
   #toast{transition:none}
 }
 </style>
@@ -232,11 +236,12 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
         </select>
       </label>
     </div>
-    <p class="sub">Géneros <span>Toca una vez para incluir, dos para excluir, tres para quitar.</span></p>
+    <p class="sub">Categorías <span>Toca una vez para incluir, dos para excluir, tres para quitar. Una película puede estar en varias.</span></p>
     <div class="chips" id="genreChips"></div>
     <label class="check"><input type="checkbox" id="optMissing"><span>Incluir películas a las que les falta el dato filtrado (duración, rating o género)</span></label>
     <label class="check"><input type="checkbox" id="optDouble"><span>Con "Todas", las que están en ambas listas tienen el doble de probabilidad</span></label>
     <label class="check"><input type="checkbox" id="optRepeat"><span>No repetir las últimas 10 que salieron</span></label>
+    <label class="check" id="motionRow" hidden><input type="checkbox" id="optMotion"><span>Animación completa de la ruleta. Tu equipo tiene activado "reducir movimiento"; esto lo ignora solo en esta página.</span></label>
     <button id="clearFilters" class="clear">Limpiar filtros</button>
   </details>
 
@@ -257,7 +262,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
       <div><dt>Duración</dt><dd id="fRun"></dd></div>
       <div><dt>En la watchlist</dt><dd id="fAdded"></dd></div>
       <div><dt>Rating</dt><dd id="fRating"></dd></div>
-      <div><dt>Género</dt><dd id="fGenre"></dd></div>
+      <div class="wide"><dt>Categorías</dt><dd id="fGenre"></dd></div>
     </dl>
     <section>
       <h3>Sinopsis</h3>
@@ -506,6 +511,46 @@ function inScope(f){
   if (sc === "both") return f.owners.length > 1;
   return f.owners.some(o => o.slot === sc);
 }
+/* ---------- categorías propias ----------
+   Se arman a partir de los géneros de TMDB, los géneros y temas de Letterboxd y las
+   palabras clave de TMDB. Cada término calza como palabra completa; con * al final
+   calza como comienzo de palabra. Para ajustar una categoría basta editar esta lista. */
+const CATEGORIES = [
+  ["Thriller psicológico", ["psychological*", "paranoi*", "obsession*", "gaslighting", "unreliable narrator", "mind game*", "psychopath*", "manipulation", "split personality", "mental illness", "insanity", "madness"]],
+  ["Filosófica y existencial", ["existential*", "philosoph*", "meaning of life", "nihilism", "metaphysic*", "consciousness", "free will", "human condition", "thought-provoking", "spiritual*", "faith", "religion", "mortality", "afterlife", "purpose", "solitude", "identity crisis"]],
+  ["Mente retorcida", ["mind-bending", "mind bending", "mind-blowing", "twist*", "nonlinear*", "non-linear*", "surreal*", "dreamlike", "dream*", "lucid dream*", "time loop", "alternate reality", "simulation", "puzzle*", "amnesia", "memory loss", "trippy", "hallucinat*"]],
+  ["Suspenso y misterio", ["suspense", "misterio", "thriller", "mystery", "whodunit", "conspiracy", "investigation", "detective*", "noir", "neo-noir", "cat and mouse"]],
+  ["Crimen y bajos fondos", ["crimen", "crime", "criminal*", "gangster*", "mafia", "mob", "heist", "robbery", "cartel", "drug*", "prison", "hitman", "corruption"]],
+  ["Terror e inquietud", ["terror", "horror", "creepy", "dread", "supernatural", "occult*", "slasher", "ghost*", "demon*", "possession", "haunted", "monster*", "unsettling", "disturbing", "gore", "zombie*"]],
+  ["Ciencia ficción y otros mundos", ["ciencia ficción", "science fiction", "sci-fi", "fantasía", "fantasy", "dystopi*", "space", "alien*", "artificial intelligence", "robot*", "time travel", "post-apocalyptic", "cyberpunk", "future"]],
+  ["Romance y desamor", ["romance", "romantic*", "love", "love story", "heartbreak*", "lovers", "marriage", "infidelity", "affair"]],
+  ["Para reírse", ["comedia", "comedy", "comedic", "satire", "satirical", "parody", "absurd*", "humor", "humour", "funny", "slapstick", "witty"]],
+  ["Acción y adrenalina", ["acción", "action", "adrenaline", "shootout", "martial arts", "car chase", "chase", "spy", "espionage", "assassin*"]],
+  ["Aventura y épica", ["aventura", "adventure", "epic*", "quest", "journey", "expedition", "survival", "western"]],
+  ["Historia y guerra", ["historia", "history", "historical*", "bélica", "war", "world war*", "warfare", "wartime", "soldier*", "battle*", "period piece", "biograph*", "true story", "based on true story"]],
+  ["Historias humanas", ["coming of age", "coming-of-age", "family", "grief", "loneliness", "friendship", "father*", "mother*", "childhood", "adolescence", "teenager*", "melancholy", "character study", "intimate", "moving", "heartfelt", "emotional", "touching"]],
+  ["Contemplativa", ["slow cinema", "contemplative", "meditative", "poetic", "arthouse", "art house", "minimalis*", "quiet", "atmospheric", "lyrical", "dreamy"]],
+  ["Animación", ["animación", "animation", "animated", "anime"]],
+  ["Documental", ["documental", "documentary"]],
+  ["Música y musicales", ["música", "music", "musical*", "musician*", "concert", "singer*"]],
+  ["Clásicos (antes de 1970)", null]
+];
+const esc = t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const CAT_RE = CATEGORIES.map(([name, terms]) => [name, terms && new RegExp("\\b(?:" +
+  terms.map(t => t.endsWith("*") ? esc(t.slice(0, -1)) : esc(t) + "(?![a-záéíóúñ])").join("|") + ")", "i")]);
+const CAT_NAMES = CATEGORIES.map(c => c[0]);
+// los filtros antiguos usaban géneros de TMDB: se descartan los que ya no existen
+Object.keys(state.opts.genres).forEach(g => { if (!CAT_NAMES.includes(g)) delete state.opts.genres[g]; });
+const catCache = new WeakMap();
+function catsOf(f){
+  const m = state.meta[f.k];
+  if (m && catCache.has(m)) return catCache.get(m);
+  const hay = m ? [...(m.genres || []), ...(m.lbTags || []), ...(m.tmdbKw || [])].join(" | ").toLowerCase() : "";
+  const year = parseInt(f.y || (m && m.release ? m.release.slice(0, 4) : ""), 10);
+  const out = CAT_RE.filter(([name, re]) => re ? (hay && re.test(hay)) : (year && year < 1970)).map(c => c[0]);
+  if (m) catCache.set(m, out);
+  return out;
+}
 function activeFilters(){
   const o = state.opts;
   return (o.minRun ? 1 : 0) + (o.maxRun ? 1 : 0) + (o.minRating ? 1 : 0) + Object.keys(o.genres).length;
@@ -523,8 +568,8 @@ function passes(f){
   const inc = Object.keys(o.genres).filter(g => o.genres[g] === 1);
   const exc = Object.keys(o.genres).filter(g => o.genres[g] === -1);
   if (inc.length || exc.length) {
-    const gs = m.genres || [];
-    if (!gs.length) { if (!keep) return false; }
+    const gs = catsOf(f);
+    if (!gs.length && !(m.genres || m.lbTags)) { if (!keep) return false; }
     else {
       if (exc.some(g => gs.includes(g))) return false;
       if (inc.length && !inc.some(g => gs.includes(g))) return false;
@@ -557,6 +602,8 @@ function pick(p){
   return p[p.length - 1].f;
 }
 const TILE_W = 120, TILE_GAP = 12;
+const systemReduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const reduceMotion = () => state.opts.motion !== "full" && systemReduce();
 let stripIndex = 0, idleSig = "";
 const posterOf = f => { const m = state.meta[f.k]; return m && m.poster ? "https://image.tmdb.org/t/p/w185" + m.poster : null; };
 function tileEl(f){
@@ -582,6 +629,7 @@ function buildIdle(force){
   const sig = src.map(f => f.k + (posterOf(f) ? "*" : "")).join("|");
   if (!force && sig === idleSig) return;
   idleSig = sig;
+  $("#strip").classList.remove("solo");
   const tr = $("#track");
   tr.replaceChildren(...(src.length ? src.map(tileEl) : [tileEl(null)]));
   place(Math.floor(tr.children.length / 2));
@@ -591,6 +639,7 @@ function stripShow(f){
   const { pool } = computePool();
   const rand = () => pool.length ? pool[Math.floor(rnd() * pool.length)].f : null;
   const seq = [rand(), rand(), rand(), f, rand(), rand(), rand()];
+  $("#strip").classList.remove("solo");
   $("#track").replaceChildren(...seq.map(tileEl));
   place(3);
   $("#track").children[3].classList.add("win");
@@ -607,35 +656,36 @@ async function spin(){
   const hint = $("#hint"), strip = $("#strip"), marquee = $("#marquee"), tr = $("#track");
   hint.textContent = "Girando…";
   $("#marquee").scrollIntoView({ behavior: "smooth", block: "nearest" });
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce = reduceMotion();
   const rand = () => pool[Math.floor(rnd() * pool.length)].f;
   marquee.classList.add("spinning");
   if (!reduce) {
     const N = 44, L = N - 4;                     // la ganadora queda en L, con 3 afiches después
     const seq = Array.from({ length: N }, rand);
     seq[L] = chosen;
+    strip.classList.remove("solo");
     tr.replaceChildren(...seq.map(tileEl));
     strip.classList.add("rolling");
     place(3);
     void tr.offsetWidth;
     const jitter = (rnd() - 0.5) * TILE_W * 0.8;  // cae un poco corrida, como una ruleta de verdad
-    tr.style.transition = "transform 4.6s cubic-bezier(.08,.6,.12,1)";
+    tr.style.transition = "transform 4.2s cubic-bezier(.08,.6,.12,1)";
     tr.style.transform = "translateX(" + (centerX(L) + jitter) + "px)";
-    await wait(4700);
-    place(L, "transform .45s cubic-bezier(.3,0,.2,1)");
-    await wait(480);
+    await wait(4250);
+    place(L, "transform .4s cubic-bezier(.3,0,.2,1)");
+    await wait(430);
     strip.classList.remove("rolling");
     tr.children[L].classList.add("win");
   } else {
-    // sin desplazamiento: el afiche del centro va cambiando cada vez más lento
+    // sin desplazamiento: se ve solo el afiche del centro, que va cambiando cada vez más lento
     const seq = [rand(), rand(), rand(), rand(), rand(), rand(), rand()];
-    tr.replaceChildren(...seq.map(tileEl)); place(3);
+    tr.replaceChildren(...seq.map(tileEl)); place(3); strip.classList.add("solo");
     const center = () => tr.children[3];
     for (let d = 70; d < 420; d *= 1.22) { center().replaceWith(tileEl(rand())); await wait(d); }
     center().replaceWith(tileEl(chosen)); center().classList.add("win");
   }
   marquee.classList.remove("spinning");
-  await wait(reduce ? 200 : 650);
+  await wait(reduce ? 200 : 500);
   idleSig = "";
   state.current = chosen; spinning = false;
   hint.textContent = "Salió " + chosen.t + (chosen.y ? " (" + chosen.y + ")" : "");
@@ -686,7 +736,7 @@ function renderCurrent(reveal){
   if (reveal) {
     const card = $("#card");
     card.classList.remove("reveal"); void card.offsetWidth; card.classList.add("reveal");
-    card.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    card.scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" });
   }
 }
 function renderCard(f){
@@ -700,7 +750,8 @@ function renderCard(f){
   $("#fYear").textContent = f.y || (m.release ? m.release.slice(0, 4) : "—");
   $("#fDir").textContent = m.directors && m.directors.length ? m.directors.join(", ") : (m.tmdbId ? "—" : "…");
   $("#fRun").textContent = m.runtime ? hhmm(m.runtime) : (m.tmdbId ? "—" : "…");
-  $("#fGenre").textContent = m.genres && m.genres.length ? m.genres.join(", ") : (m.tmdbId ? "—" : "…");
+  const cats = catsOf(f);
+  $("#fGenre").textContent = cats.length ? cats.join(", ") : (m.genres && m.genres.length ? m.genres.join(", ") : (m.tmdbId ? "—" : "…"));
   const rt = $("#fRating"); rt.replaceChildren();
   const rsrc = t => { const x = document.createElement("small"); x.className = "rsrc"; x.textContent = t; return x; };
   const nfmt = n => n.toLocaleString("es-CL");
@@ -813,16 +864,15 @@ function renderFilters(){
   $("#clearFilters").disabled = !n;
   if (!$("#moreBox").open) return;
   const counts = {};
-  for (const f of union().values()) for (const g of ((state.meta[f.k] || {}).genres || [])) counts[g] = (counts[g] || 0) + 1;
-  Object.keys(o.genres).forEach(g => { if (!(g in counts)) counts[g] = 0; });
-  const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+  for (const f of union().values()) for (const g of catsOf(f)) counts[g] = (counts[g] || 0) + 1;
+  const names = CAT_NAMES.filter(g => counts[g] || o.genres[g]);
   const box = $("#genreChips");
-  if (!names.length) { box.textContent = "Los géneros aparecen cuando las fichas estén completas."; return; }
+  if (!names.length) { box.textContent = "Las categorías aparecen cuando las fichas estén completas."; return; }
   box.replaceChildren(...names.map(g => {
     const b = document.createElement("button"), st = o.genres[g] || 0;
     b.className = "chip" + (st === 1 ? " inc" : st === -1 ? " exc" : "");
     b.setAttribute("aria-label", g + (st === 1 ? ": incluido" : st === -1 ? ": excluido" : ": sin filtrar"));
-    b.append(g); const c = document.createElement("small"); c.textContent = counts[g]; b.appendChild(c);
+    b.append(g); const c = document.createElement("small"); c.textContent = counts[g] || 0; b.appendChild(c);
     b.addEventListener("click", () => {
       const next = st === 0 ? 1 : st === 1 ? -1 : 0;
       if (next) o.genres[g] = next; else delete o.genres[g];
@@ -846,6 +896,16 @@ $("#moreBox").addEventListener("toggle", renderFilters);
 [["#fMinRun","minRun"],["#fMaxRun","maxRun"],["#fMinRating","minRating"]].forEach(([sel, key]) => {
   $(sel).addEventListener("change", e => { state.opts[key] = parseFloat(e.target.value) || 0; filtersChanged(); });
 });
+$("#optMotion").addEventListener("change", e => {
+  state.opts.motion = e.target.checked ? "full" : "auto"; saveOpts(); applyMotion();
+});
+function applyMotion(){
+  document.documentElement.classList.toggle("force-motion", state.opts.motion === "full");
+  $("#motionRow").hidden = !systemReduce();
+  $("#optMotion").checked = state.opts.motion === "full";
+}
+applyMotion();
+matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", applyMotion);
 $("#optMissing").addEventListener("change", e => { state.opts.keepMissing = e.target.checked; filtersChanged(); });
 $("#clearFilters").addEventListener("click", () => {
   Object.assign(state.opts, { minRun:0, maxRun:0, minRating:0, genres:{} }); filtersChanged();
