@@ -6,7 +6,13 @@
 <title>Ruletaboxd</title>
 <meta name="application-name" content="Ruletaboxd">
 <meta name="apple-mobile-web-app-title" content="Ruletaboxd">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='44' fill='%23A8262B'/><circle cx='50' cy='50' r='12' fill='%23F2C063'/></svg>">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#14181C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -103,6 +109,28 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .chip.inc small{color:var(--accent-ink);opacity:.7}
 .chip.exc{border-color:var(--danger);color:var(--danger);text-decoration:line-through}
 .clear{width:100%;margin-top:8px}
+
+/* Recientes y Me tinca */
+.row-block{margin-top:14px}
+.row-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.row-title{margin:0;font-weight:600;flex:1}
+.row-title span{color:var(--muted);font-weight:400}
+.mini{min-height:34px;padding:5px 12px;font-size:13px}
+.mini.ghost{background:none;color:var(--muted)}
+.thumbs{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:thin}
+.thumb{flex:none;width:74px;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;padding:0;border:none;background:none;
+  min-height:0;font-size:12px;font-weight:500;color:var(--ink);text-align:left;border-radius:6px}
+.thumb .pic{width:74px;height:111px;border-radius:6px;background:var(--raised);overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;
+  padding:4px;font-family:var(--display);font-size:13px;line-height:1.05;text-align:center;color:var(--muted)}
+.thumb .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumb .cap{line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.thumb.now .pic{box-shadow:0 0 0 2px var(--bulb)}
+.tinca{margin-top:10px;min-height:38px;padding:6px 14px;font-size:14px}
+.tinca[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cat-tools{display:flex;gap:8px;margin-bottom:8px}
+.cat-tools .search{margin-bottom:0;flex:1;min-width:0}
+.cat-tools select{font:inherit;font-size:14px;color:var(--ink);background:var(--panel);border:1.5px solid var(--raised);border-radius:10px;padding:0 8px;max-width:44%}
+.stats.warn{color:var(--bulb)}
 
 /* Ficha */
 .card-head{margin:0 0 14px}
@@ -293,6 +321,18 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     <button id="spin" class="primary" disabled>Girar</button>
     <button id="duelBtn" class="duel-btn" disabled>Duelo: salen 3, cada uno veta una</button>
     <p id="stats" class="stats"></p>
+    <div class="row-block" id="shortBlock" hidden>
+      <div class="row-head">
+        <p class="row-title">Me tinca <span id="shortCount"></span></p>
+        <button id="shortDuel" class="mini">Duelo entre estas</button>
+        <button id="shortClear" class="mini ghost">Vaciar</button>
+      </div>
+      <div class="thumbs" id="shortRow"></div>
+    </div>
+    <div class="row-block" id="recentBlock" hidden>
+      <div class="row-head"><p class="row-title">Recientes</p></div>
+      <div class="thumbs" id="recentRow"></div>
+    </div>
   </div>
 
   <article class="card" id="card" hidden>
@@ -300,6 +340,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     <header class="card-head">
       <h2 id="fTitle"></h2>
       <p class="owners-line" id="fOwners"></p>
+      <button id="tinca" class="tinca" aria-pressed="false">Me tinca</button>
     </header>
     <dl class="facts">
       <div><dt>Año</dt><dd id="fYear"></dd></div>
@@ -333,7 +374,17 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
   <section class="block">
     <details class="catbox" id="catBox">
       <summary><h2>Todas las películas</h2><span class="catcount" id="catCount"></span><span class="chev" aria-hidden="true"></span></summary>
-      <input id="q" class="search" type="search" placeholder="Buscar por título o director" aria-label="Buscar película">
+      <div class="cat-tools">
+        <input id="q" class="search" type="search" placeholder="Buscar por título o director" aria-label="Buscar película">
+        <select id="catSort" aria-label="Ordenar">
+          <option value="title">Título</option>
+          <option value="rating">Mejor rating</option>
+          <option value="short">Más cortas</option>
+          <option value="long">Más largas</option>
+          <option value="oldest">Más tiempo en la watchlist</option>
+          <option value="newest">Recién agregadas</option>
+        </select>
+      </div>
       <ul class="catalog" id="catalog"></ul>
       <p class="more" id="catMore"></p>
     </details>
@@ -386,8 +437,8 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
-const state = { lists:{}, marks:{}, meta:{}, watched:{}, spins:[], status:null, current:null, mode:"loading",
-  opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false } };
+const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, spins:[], status:null, current:null, mode:"loading",
+  opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false, catSort:"title" } };
 let store = null, spinning = false;
 
 /* ---------- preferencias por dispositivo ---------- */
@@ -404,8 +455,8 @@ async function firebaseStore(){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
-  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, cb = null;
-  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched });
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist} });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
   return {
     kind:"firebase",
@@ -417,23 +468,26 @@ async function firebaseStore(){
       F.onSnapshot(F.doc(db, "log", "spins"), s => { spins = s.exists() ? (s.data().items || []) : []; emit(); }, onErr);
       F.onSnapshot(F.doc(db, "status", "sync"), s => { status = s.exists() ? s.data() : null; emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "watched"), F.limit(3000)), s => { watched = toMap(s); emit(); }, onErr);
+      F.onSnapshot(F.query(F.collection(db, "shortlist"), F.limit(200)), s => { shortlist = toMap(s); emit(); }, onErr);
     },
     setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
     setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
     delMark:(k) => F.deleteDoc(F.doc(db, "marks", k)),
     setSpins:(arr) => F.setDoc(F.doc(db, "log", "spins"), { items: arr }),
-    requestFix:(k, url) => F.setDoc(F.doc(db, "fixes", k), { url, at: Date.now() })
+    requestFix:(k, url) => F.setDoc(F.doc(db, "fixes", k), { url, at: Date.now() }),
+    addShort:(k, data) => F.setDoc(F.doc(db, "shortlist", k), data),
+    delShort:(k) => F.deleteDoc(F.doc(db, "shortlist", k))
   };
 }
 function localStore(){
   const KEY = "funcion-doble:v2";
   let d = {};
   try { d = JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ d = {}; }
-  d.lists = d.lists || {}; d.marks = d.marks || {}; d.spins = d.spins || [];
+  d.lists = d.lists || {}; d.marks = d.marks || {}; d.spins = d.spins || []; d.shortlist = d.shortlist || {};
   let cb = null;
   const emit = () => {
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
-    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{} });
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist} });
   };
   return {
     kind:"local",
@@ -442,7 +496,9 @@ function localStore(){
     async setMark(k, m){ d.marks[k] = m; emit(); },
     async delMark(k){ delete d.marks[k]; emit(); },
     async setSpins(arr){ d.spins = arr; emit(); },
-    async requestFix(){ throw { code:"local" }; }
+    async requestFix(){ throw { code:"local" }; },
+    async addShort(k, data){ d.shortlist[k] = data; emit(); },
+    async delShort(k){ delete d.shortlist[k]; emit(); }
   };
 }
 async function write(fn, okMsg){
@@ -795,7 +851,7 @@ async function spin(){
   idleSig = "";
   state.current = chosen; spinning = false;
   hint.textContent = "Salió " + chosen.t + (chosen.y ? " (" + chosen.y + ")" : "");
-  renderCurrent(true); renderButtons();
+  renderCurrent(true); renderButtons(); renderRows();
   const entry = { k: chosen.k, t: chosen.t, at: Date.now() };
   if (chosen.y) entry.y = chosen.y;
   write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
@@ -808,37 +864,47 @@ function pickTile(f){
   const who = document.createElement("span"); who.className = "who";
   b.append(t, cap, who); return b;
 }
-function startDuel(){
+const DUEL_MAX = 6;
+function startDuel(fromShort){
   if (spinning) return;
-  const { pool } = computePool();
-  if (pool.length < 3) { toast("Se necesitan al menos 3 películas en juego."); return; }
-  // 3 distintas, respetando pesos y filtros
-  const picks = [], left = pool.slice();
-  while (picks.length < 3 && left.length) { const f = pick(left); picks.push(f); left.splice(left.findIndex(x => x.f === f), 1); }
-  const first = rnd() < 0.5 ? "a" : "b";
-  duel = { picks, turns: [first, first === "a" ? "b" : "a"], out: [] };
+  let picks;
+  if (fromShort === true) {
+    const cand = shortFilms();
+    if (cand.length < 2) { toast("Marca al menos 2 películas con \"Me tinca\"."); return; }
+    picks = cand.slice().sort(() => rnd() - 0.5).slice(0, DUEL_MAX);
+    if (cand.length > DUEL_MAX) toast("Hay " + cand.length + " marcadas: el duelo se juega con " + DUEL_MAX + " al azar.");
+  } else {
+    const { pool } = computePool();
+    if (pool.length < 3) { toast("Se necesitan al menos 3 películas en juego."); return; }
+    picks = []; const left = pool.slice();
+    while (picks.length < 3 && left.length) { const f = pick(left); picks.push(f); left.splice(left.findIndex(x => x.f === f), 1); }
+  }
+  const first = rnd() < 0.5 ? "a" : "b", second = first === "a" ? "b" : "a";
+  duel = { picks, turns: Array.from({ length: picks.length - 1 }, (_, i) => i % 2 ? second : first), out: [] };
   spinning = true; state.current = null;
   $("#card").hidden = true; $("#strip").hidden = true;
   const box = $("#duel"); box.hidden = false;
+  box.style.gridTemplateColumns = "repeat(" + Math.min(picks.length, 3) + ", minmax(0,1fr))";
   box.classList.remove("enter"); void box.offsetWidth; box.classList.add("enter");
   const cancel = document.createElement("button"); cancel.className = "duel-cancel"; cancel.textContent = "Cancelar duelo";
-  cancel.addEventListener("click", endDuel);
+  cancel.addEventListener("click", () => endDuel(null));
   box.replaceChildren(...picks.map((f, i) => { const b = pickTile(f); b.addEventListener("click", () => veto(i)); return b; }), cancel);
   duelHint(); renderButtons();
   $("#marquee").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "nearest" });
 }
 function duelHint(){
-  const t = duel.turns[duel.out.length];
-  $("#hint").textContent = "Turno de " + nameOf(t) + ": toca la que vetas";
+  const t = duel.turns[duel.out.length], left = duel.picks.length - duel.out.length;
+  $("#hint").textContent = "Turno de " + nameOf(t) + ": toca la que vetas (quedan " + left + ")";
 }
 async function veto(i){
-  if (!duel || duel.out.includes(i) || duel.out.length >= 2) return;
+  const need = duel ? duel.picks.length - 1 : 0;
+  if (!duel || duel.out.includes(i) || duel.out.length >= need) return;
   const slot = duel.turns[duel.out.length];
   duel.out.push(i);
   const b = $("#duel").children[i];
   b.classList.add("out"); b.disabled = true; b.querySelector(".who").textContent = "vetó " + nameOf(slot);
-  if (duel.out.length < 2) { duelHint(); return; }
-  const wi = [0, 1, 2].find(x => !duel.out.includes(x)), winner = duel.picks[wi];
+  if (duel.out.length < need) { duelHint(); return; }
+  const wi = duel.picks.findIndex((_, x) => !duel.out.includes(x)), winner = duel.picks[wi];
   const wb = $("#duel").children[wi]; wb.classList.add("win"); wb.disabled = true;
   [...$("#duel").children].forEach(c => { c.disabled = true; });
   $("#hint").textContent = "Queda " + winner.t;
@@ -848,22 +914,74 @@ async function veto(i){
 function endDuel(winner){
   const w = winner && winner.k ? winner : null;
   duel = null; spinning = false;
-  $("#duel").hidden = true; $("#duel").replaceChildren(); $("#strip").hidden = false;
+  $("#duel").hidden = true; $("#duel").replaceChildren(); $("#duel").style.gridTemplateColumns = ""; $("#strip").hidden = false;
   if (w) {
     state.current = w; stripShow(w);
     $("#hint").textContent = "Ganó el duelo: " + w.t + (w.y ? " (" + w.y + ")" : "");
-    renderCurrent(true);
+    renderCurrent(true); renderRows();
     const entry = { k: w.k, t: w.t, at: Date.now() };
     if (w.y) entry.y = w.y;
     write(() => store.setSpins([entry, ...state.spins].slice(0, SPIN_LOG)));
   } else { $("#hint").textContent = ""; buildIdle(true); renderCurrent(); }
   renderButtons();
 }
+function shortFilms(){
+  const all = union();
+  return Object.keys(state.shortlist || {})
+    .sort((a, b) => (state.shortlist[b].at || 0) - (state.shortlist[a].at || 0))
+    .map(k => all.get(k)).filter(f => f && !isOut(f.k));
+}
+function recentFilms(){
+  const all = union(), seen = new Set(), out = [];
+  for (const s of state.spins) {
+    const k = s.k || s.i;
+    if (!k || seen.has(k)) continue; seen.add(k);
+    const f = all.get(k); if (f) out.push(f);
+    if (out.length >= 6) break;
+  }
+  return out;
+}
+function thumbEl(f){
+  const b = document.createElement("button"); b.className = "thumb" + (state.current && state.current.k === f.k ? " now" : ""); b.type = "button";
+  const pic = document.createElement("span"); pic.className = "pic";
+  const src = posterOf(f);
+  pic.textContent = src ? "" : f.t;
+  if (src) { const i = document.createElement("img"); i.src = src; i.alt = ""; i.loading = "lazy"; i.onerror = () => { i.remove(); pic.textContent = f.t; }; pic.appendChild(i); }
+  const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = f.t;
+  b.append(pic, cap);
+  b.addEventListener("click", () => show(f.k));
+  return b;
+}
+function renderRows(){
+  const sf = shortFilms(), rf = recentFilms();
+  $("#shortBlock").hidden = !sf.length;
+  $("#shortCount").textContent = sf.length ? "(" + sf.length + ")" : "";
+  $("#shortDuel").disabled = spinning || sf.length < 2;
+  $("#shortRow").replaceChildren(...sf.map(thumbEl));
+  $("#recentBlock").hidden = !rf.length;
+  $("#recentRow").replaceChildren(...rf.map(thumbEl));
+  const f = state.current, on = !!(f && state.shortlist && state.shortlist[f.k]);
+  $("#tinca").setAttribute("aria-pressed", String(on));
+  $("#tinca").textContent = on ? "Me tinca, marcada" : "Me tinca";
+}
+async function toggleTinca(){
+  const f = state.current; if (!f) return;
+  if (state.shortlist[f.k]) await write(() => store.delShort(f.k), "Quitada de Me tinca.");
+  else {
+    const data = { t: f.t, at: Date.now() }; if (f.y) data.y = f.y;
+    await write(() => store.addShort(f.k, data), "Agregada a Me tinca.");
+  }
+}
+async function clearShort(){
+  const keys = Object.keys(state.shortlist || {});
+  if (!keys.length || !confirm("¿Vaciar la lista Me tinca? Se borra en ambos celulares.")) return;
+  await write(async () => { for (const k of keys) await store.delShort(k); }, "Lista Me tinca vaciada.");
+}
 function show(k){
   const f = union().get(k); if (!f || spinning) return;
   state.current = f; stripShow(f);
   $("#hint").textContent = f.t + (f.y ? " (" + f.y + ")" : "");
-  renderCurrent(true); renderButtons();
+  renderCurrent(true); renderButtons(); renderRows();
 }
 
 /* ---------- render ---------- */
@@ -978,9 +1096,36 @@ function renderButtons(){
   setLink($("#trailer"), tr ? "https://www.youtube.com/watch?v=" + encodeURIComponent(tr) : null);
   $("#trailer").textContent = has && !tr && (state.meta[state.current.k] || {}).tmdbAt ? "Sin tráiler" : "Ver tráiler";
 }
+function relaxHints(){
+  // cuántas habría si se quitara cada filtro por separado
+  const o = state.opts, saved = JSON.stringify(o), out = [];
+  const tries = [
+    ["la duración mínima", () => { o.minRun = 0; }, o.minRun],
+    ["la duración máxima", () => { o.maxRun = 0; }, o.maxRun],
+    ["el rating mínimo", () => { o.minRating = 0; }, o.minRating],
+    ["las categorías", () => { o.genres = {}; }, Object.keys(o.genres).length],
+    ["el filtro de plataformas", () => { o.onlyMine = false; }, o.onlyMine && o.platforms.length],
+    ["la selección de lista", () => { o.scope = "all"; }, o.scope !== "all"]
+  ];
+  for (const [label, relax, active] of tries) {
+    if (!active) continue;
+    relax(); const n = computePool().inPlay; Object.assign(o, JSON.parse(saved));
+    if (n) out.push([label, n]);
+  }
+  return out.sort((a, b) => b[1] - a[1]).slice(0, 2);
+}
 function renderStats(){
-  const { inPlay, total, both } = computePool();
-  $("#stats").textContent = total ? inPlay + " en juego de " + total + " en total; " + both + " están en ambas listas." : "";
+  const { inPlay, total, both } = computePool(), el = $("#stats");
+  el.classList.remove("warn");
+  if (!total) { el.textContent = ""; return; }
+  if (!inPlay && (activeFilters() || state.opts.scope !== "all")) {
+    const h = relaxHints();
+    el.classList.add("warn");
+    el.textContent = "Ninguna película cumple esta combinación." +
+      (h.length ? " Sin " + h.map(([l, n]) => l + " habría " + n).join("; sin ") + "." : "");
+    return;
+  }
+  el.textContent = inPlay + " en juego de " + total + " en total; " + both + " están en ambas listas.";
 }
 function renderLists(){
   document.querySelectorAll(".slot").forEach(box => {
@@ -1062,13 +1207,32 @@ function renderTogether(){
   };
   $("#togList").replaceChildren(...waiting.map(w => item(w, w.by.a ? "b" : "a")), ...both.slice(0, 200).map(w => item(w)));
 }
+function catSorter(mode){
+  const M = f => state.meta[f.k] || {};
+  const added = f => { const d = f.owners.map(o => o.a).filter(Boolean); return d.length ? Math.min(...d) : null; };
+  const byTitle = (a, b) => norm(a.t).localeCompare(norm(b.t));
+  const num = (get, dir) => (a, b) => {                       // los que no tienen el dato van al final
+    const x = get(a), y = get(b);
+    if (x == null && y == null) return byTitle(a, b);
+    if (x == null) return 1; if (y == null) return -1;
+    return dir * (x - y) || byTitle(a, b);
+  };
+  switch (mode) {
+    case "rating": return num(f => M(f).lbRating, -1);
+    case "short": return num(f => M(f).runtime, 1);
+    case "long": return num(f => M(f).runtime, -1);
+    case "oldest": return num(added, 1);
+    case "newest": return num(added, -1);
+    default: return byTitle;
+  }
+}
 function renderCatalog(){
   $("#catCount").textContent = union().size ? "(" + union().size + ")" : "";
   if (!$("#catBox").open) return;   // cerrada no se dibuja: ahorra trabajo en cada actualización
   const q = norm($("#q").value.trim());
   const films = [...union().values()]
     .filter(f => !q || norm(f.t).includes(q) || norm(((state.meta[f.k] || {}).directors || []).join(" ")).includes(q))
-    .sort((a, b) => norm(a.t).localeCompare(norm(b.t)));
+    .sort(catSorter(state.opts.catSort));
   const now = Date.now();
   $("#catalog").replaceChildren(...films.slice(0, CAT_MAX).map(f => {
     const li = document.createElement("li"), b = document.createElement("button");
@@ -1135,7 +1299,7 @@ function renderFilters(){
   }));
 }
 function filtersChanged(){ saveOpts(); renderFilters(); renderButtons(); renderStats(); }
-function renderAll(){ renderTogether(); renderScope(); renderFilters(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
+function renderAll(){ schedulePreload(); renderRows(); renderTogether(); renderScope(); renderFilters(); renderStatus(); renderLists(); renderCurrent(); renderButtons(); renderStats(); renderMarks(); renderCatalog(); }
 
 let toastTimer;
 function toast(msg){
@@ -1167,9 +1331,14 @@ $("#optMine").addEventListener("change", e => {
 $("#clearFilters").addEventListener("click", () => {
   Object.assign(state.opts, { minRun:0, maxRun:0, minRating:0, genres:{}, onlyMine:false }); filtersChanged();
 });
+$("#catSort").value = state.opts.catSort || "title";
+$("#catSort").addEventListener("change", e => { state.opts.catSort = e.target.value; saveOpts(); renderCatalog(); });
 $("#catBox").addEventListener("toggle", () => { if ($("#catBox").open) { renderCatalog(); $("#q").focus({ preventScroll: true }); } });
 $("#again").addEventListener("click", spin);
-$("#duelBtn").addEventListener("click", startDuel);
+$("#duelBtn").addEventListener("click", () => startDuel(false));
+$("#shortDuel").addEventListener("click", () => startDuel(true));
+$("#shortClear").addEventListener("click", clearShort);
+$("#tinca").addEventListener("click", toggleTinca);
 $("#togBox").addEventListener("toggle", renderTogether);
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
 document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
@@ -1206,6 +1375,25 @@ document.querySelectorAll(".slot").forEach(box => {
   });
 });
 
+/* ---------- precarga de afiches ----------
+   Descarga en segundo plano los afiches de las películas en juego, para que la ruleta
+   nunca muestre tarjetas vacías. Máximo 150 y nunca con "ahorro de datos" activado. */
+const preloaded = new Set();
+let preloadTimer = null;
+function schedulePreload(){
+  clearTimeout(preloadTimer);
+  preloadTimer = setTimeout(() => {
+    if (navigator.connection && navigator.connection.saveData) return;
+    const urls = computePool().pool.map(x => posterOf(x.f)).filter(u => u && !preloaded.has(u)).slice(0, 150 - preloaded.size);
+    let i = 0;
+    const step = () => {
+      for (let n = 0; n < 6 && i < urls.length; n++, i++) { const img = new Image(); img.decoding = "async"; img.src = urls[i]; preloaded.add(urls[i]); }
+      if (i < urls.length) (window.requestIdleCallback || (f => setTimeout(f, 200)))(step);
+    };
+    step();
+  }, 1500);
+}
+
 /* ---------- arranque ---------- */
 renderAll();
 (async () => {
@@ -1215,7 +1403,7 @@ renderAll();
   state.mode = store.kind;
   store.subscribe(s => {
     Object.assign(state, s);
-    if (!spinning) renderAll(); else { renderLists(); renderMarks(); renderStats(); renderCatalog(); }
+    if (!spinning) renderAll(); else { renderLists(); renderMarks(); renderStats(); renderCatalog(); renderRows(); }
   }, () => toast("Se perdió la conexión con la base de datos. Recarga la página."));
   renderAll();
 })();
