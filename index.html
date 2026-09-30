@@ -552,7 +552,7 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
-const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, together:{}, togetherInfo:{}, spins:[], status:null, current:null, mode:"loading",
+const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, together:{}, togetherInfo:{}, bothRated:{}, spins:[], status:null, current:null, mode:"loading",
   opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false, catSort:"title" } };
 let store = null, spinning = false;
 
@@ -570,8 +570,8 @@ async function firebaseStore(){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
-  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, togetherInfo = {}, cb = null;
-  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together, togetherInfo });
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, togetherInfo = {}, bothRated = {}, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together, togetherInfo, bothRated });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
   let gotLists = false, gotMeta = false, readyRes;
   const ready = new Promise(r => { readyRes = r; });
@@ -591,6 +591,7 @@ async function firebaseStore(){
       F.onSnapshot(F.query(F.collection(db, "together"), F.limit(3000)), s => { together = toMap(s); emit(); }, onErr);
       // datos extra para las estadísticas; si las reglas aún no lo permiten, la página sigue igual
       F.onSnapshot(F.query(F.collection(db, "togetherInfo"), F.limit(3000)), s => { togetherInfo = toMap(s); emit(); }, () => {});
+      F.onSnapshot(F.query(F.collection(db, "bothRated"), F.limit(3000)), s => { bothRated = toMap(s); emit(); }, () => {});
     },
     setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
     setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
@@ -610,7 +611,7 @@ function localStore(){
   let cb = null;
   const emit = () => {
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
-    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist}, together:{}, togetherInfo:{} });
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist}, together:{}, togetherInfo:{}, bothRated:{} });
   };
   return {
     kind:"local",
@@ -1459,9 +1460,16 @@ function renderTogetherStats(both, rated){
   }
 
   // Las notas
-  if (rated.length) {
-    const diff = rated.slice().sort((x, y) => Math.abs(y.by.a.r - y.by.b.r) - Math.abs(x.by.a.r - x.by.b.r))[0];
-    if (diff.by.a.r !== diff.by.b.r) add("notes", { k: "Mayor desacuerdo", v: label(diff), txt: true, w: diff, rates: diff });
+  // la única que mira todas las que calificaron ambos, juntos o no (bothRated, con la nota más reciente de cada uno)
+  const togDate = new Map(both.map(w => [w.tmdbId, w.d]));
+  const anyRated = Object.values(state.bothRated || {}).filter(x => x.a && x.b && x.a.r != null && x.b.r != null)
+    .map(x => ({ t: x.t, y: x.y, poster: x.poster, tmdbId: x.tmdbId, by: { a: x.a, b: x.b },
+      apart: !togDate.has(x.tmdbId), d: togDate.get(x.tmdbId) || (x.a.d > x.b.d ? x.a.d : x.b.d) }));
+  const pool = anyRated.length ? anyRated : rated;
+  if (pool.length) {
+    const diff = pool.slice().sort((x, y) => Math.abs(y.by.a.r - y.by.b.r) - Math.abs(x.by.a.r - x.by.b.r))[0];
+    if (diff.by.a.r !== diff.by.b.r) add("notes", { k: "Mayor desacuerdo", v: label(diff), txt: true, w: diff, rates: diff,
+      d: anyRated.length ? (diff.apart ? "No la vieron juntos · " : "") + "de las " + anyRated.length + " que calificaron ambos" : "" });
   }
   if (rated.length >= 3) {
     const sum = w => w.by.a.r + w.by.b.r;
@@ -1669,7 +1677,10 @@ function openTogFilm(w){
   else { syn.classList.add("pending"); syn.textContent = raw && raw.missing ? "TMDB no tiene datos de esta película."
     : "overview" in i ? "TMDB no tiene resumen para esta película." : "El resumen llega en la próxima sincronización."; }
   body.appendChild(syn);
-  body.appendChild(el("p", "tf-seen", "Vista juntos el " + new Date(Date.parse(w.d + "T12:00:00Z")).toLocaleDateString("es-CL", { day:"numeric", month:"long", year:"numeric" })));
+  const day = d => new Date(Date.parse(d + "T12:00:00Z")).toLocaleDateString("es-CL", { day:"numeric", month:"long", year:"numeric" });
+  body.appendChild(el("p", "tf-seen", w.apart
+    ? "No la vieron juntos: " + nameOf("a") + " la vio el " + day(w.by.a.d) + " y " + nameOf("b") + " el " + day(w.by.b.d)
+    : "Vista juntos el " + day(w.d)));
   const rt = el("div", "rt");
   ["a", "b"].forEach(s => {
     const e = w.by[s]; if (!e) return;
@@ -1863,7 +1874,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-30-5";
+const APP_VERSION = "2026-09-30-6";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
