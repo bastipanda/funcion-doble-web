@@ -190,6 +190,24 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .together .rates a{text-decoration:none}
 .together .stars{color:var(--bulb);letter-spacing:1px}
 .together .verdict{font-size:13px;color:var(--muted);margin-top:2px}
+.tstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 16px}
+.tstat{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.tstat .k{font-size:12px;color:var(--muted)}
+.tstat .v{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.15;overflow-wrap:anywhere}
+.tstat .v.txt{font-family:var(--text);font-size:15px;font-weight:600;line-height:1.3}
+.tstat .d{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.tranks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0 0 14px}
+.tranks:empty,.tstats:empty{display:none}
+@media (max-width:420px){.tranks{grid-template-columns:1fr}.tstat .v.txt{font-size:14px}}
+.trank h3{font-family:var(--text);font-size:13px;font-weight:600;color:var(--muted);margin:0 0 4px}
+.trank ol{list-style:none;margin:0;padding:0}
+.trank li{display:block;padding:3px 0;border:0;font-size:14px}
+.trank .row{display:flex;justify-content:space-between;gap:8px}
+.trank .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trank .ct{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
+.trank .bar{height:4px;margin-top:2px}
+.tog-pend{margin:0 0 6px;border-top:1px solid var(--line)}
+.tog-pend summary{color:var(--muted);font-weight:500}
 .again{width:100%;margin-top:8px;border-color:var(--bulb);color:var(--bulb)}
 .card.reveal{animation:rise .45s ease-out}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
@@ -448,6 +466,10 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     <details class="catbox" id="togBox">
       <summary><h2>Vistas juntos</h2><span class="catcount" id="togCount"></span><span class="chev" aria-hidden="true"></span></summary>
       <p class="tog-sum" id="togSummary"></p>
+      <div class="tstats" id="togStats"></div>
+      <div class="tranks" id="togRanks"></div>
+      <p class="hint" id="togInfoNote" hidden></p>
+      <details class="log tog-pend" id="togPending" hidden><summary>Por confirmar (<span class="n">0</span>)</summary><ul class="together"></ul></details>
       <ul class="together" id="togList"></ul>
       <p class="hint">Sale de los diarios de Letterboxd: cuenta como vista juntos cuando ambos registran la misma película con hasta 3 días de diferencia. Toca una nota para abrir ese registro. Para traer el historial completo, cada uno sube su exportación de Letterboxd en su lista (el .zip trae el diario). Lo guardado aquí es permanente: no cambia aunque cambien usuarios o importaciones.</p>
     </details>
@@ -469,7 +491,7 @@ const FIREBASE_CONFIG = window.FIREBASE_CONFIG || { apiKey: "PEGAR_AQUI" };
 
 const VETO_DAYS = 14, NO_REPEAT = 10, SPIN_LOG = 30, DAY = 86400000, CAT_MAX = 2000;
 const $ = s => document.querySelector(s);
-const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, together:{}, spins:[], status:null, current:null, mode:"loading",
+const state = { lists:{}, marks:{}, meta:{}, watched:{}, shortlist:{}, together:{}, togetherInfo:{}, spins:[], status:null, current:null, mode:"loading",
   opts:{ double:true, noRepeat:true, scope:"all", minRun:0, maxRun:0, minRating:0, genres:{}, keepMissing:true, platforms:[], onlyMine:false, catSort:"title" } };
 let store = null, spinning = false;
 
@@ -487,8 +509,8 @@ async function firebaseStore(){
   const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
   const F = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
   const db = F.getFirestore(initializeApp(FIREBASE_CONFIG));
-  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, cb = null;
-  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together });
+  let lists = {}, marks = {}, meta = {}, spins = [], status = null, watched = {}, shortlist = {}, together = {}, togetherInfo = {}, cb = null;
+  const emit = () => cb && cb({ lists:{...lists}, marks:{...marks}, meta, spins:[...spins], status, watched, shortlist:{...shortlist}, together, togetherInfo });
   const toMap = s => { const o = {}; s.forEach(d => { o[d.id] = d.data(); }); return o; };
   let gotLists = false, gotMeta = false, readyRes;
   const ready = new Promise(r => { readyRes = r; });
@@ -506,6 +528,8 @@ async function firebaseStore(){
       F.onSnapshot(F.query(F.collection(db, "watched"), F.limit(3000)), s => { watched = toMap(s); emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "shortlist"), F.limit(200)), s => { shortlist = toMap(s); emit(); }, onErr);
       F.onSnapshot(F.query(F.collection(db, "together"), F.limit(3000)), s => { together = toMap(s); emit(); }, onErr);
+      // datos extra para las estadísticas; si las reglas aún no lo permiten, la página sigue igual
+      F.onSnapshot(F.query(F.collection(db, "togetherInfo"), F.limit(3000)), s => { togetherInfo = toMap(s); emit(); }, () => {});
     },
     setList:(slot, data) => F.setDoc(F.doc(db, "lists", slot), data, { merge:true }),
     setMark:(k, m) => F.setDoc(F.doc(db, "marks", k), m),
@@ -525,7 +549,7 @@ function localStore(){
   let cb = null;
   const emit = () => {
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){}
-    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist}, together:{} });
+    cb && cb({ lists:{...d.lists}, marks:{...d.marks}, meta:{}, spins:[...d.spins], status:null, watched:{}, shortlist:{...d.shortlist}, together:{}, togetherInfo:{} });
   };
   return {
     kind:"local",
@@ -1279,6 +1303,7 @@ function renderTogether(){
     ? both.length + (both.length === 1 ? " película vista juntos" : " películas vistas juntos") +
       (rated.length ? ". Promedio de " + nameOf("a") + ": " + avg("a") + "; de " + nameOf("b") + ": " + avg("b") + ". Misma nota en " + same + " de " + rated.length + "." : ".")
     : "Todavía no hay películas registradas por ambos. Aparecen solas cuando los dos las registran en Letterboxd.";
+  renderTogetherStats(both, rated);
   const item = (w, pendingSlot) => {
     const li = document.createElement("li");
     if (w.poster) { const i = document.createElement("img"); i.src = "https://image.tmdb.org/t/p/w92" + w.poster; i.alt = ""; i.loading = "lazy"; li.appendChild(i); }
@@ -1286,7 +1311,7 @@ function renderTogether(){
     const body = document.createElement("div"); body.className = "body";
     const tt = document.createElement("div"); tt.className = "tt"; tt.textContent = w.t + (w.y ? " (" + w.y + ")" : ""); body.appendChild(tt);
     const e0 = w.by.a || w.by.b;
-    const dt = document.createElement("div"); dt.className = "dt"; dt.textContent = new Date(dayMs(e0.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }); body.appendChild(dt);
+    const dt = document.createElement("div"); dt.className = "dt"; dt.textContent = new Date(dayMs(w.d || e0.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }); body.appendChild(dt);
     const rates = document.createElement("div"); rates.className = "rates";
     ["a", "b"].forEach(sl => {
       const e = w.by[sl]; if (!e) return;
@@ -1305,7 +1330,131 @@ function renderTogether(){
     if (v.textContent) body.appendChild(v);
     li.appendChild(body); return li;
   };
-  $("#togList").replaceChildren(...waiting.map(w => item(w, w.by.a ? "b" : "a")), ...both.slice(0, 200).map(w => item(w)));
+  $("#togPending").hidden = !waiting.length;
+  $("#togPending .n").textContent = waiting.length;
+  $("#togPending ul").replaceChildren(...waiting.map(w => item(w, w.by.a ? "b" : "a")));
+  $("#togList").replaceChildren(...both.slice(0, 200).map(w => item(w)));
+}
+/* Estadísticas de "Vistas juntos". Cada una aparece solo si hay datos suficientes para que diga algo. */
+function renderTogetherStats(both, rated){
+  const dayMs = d => Date.parse(d + "T12:00:00Z");
+  const num = n => String(n).replace(".", ",");
+  const label = w => w.t + (w.y ? " (" + w.y + ")" : "");
+  const dur = m => Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
+  const INFO = state.togetherInfo || {};
+  const withInfo = both.map(w => ({ w, i: INFO[String(w.tmdbId)] })).filter(x => x.i && !x.i.missing);
+  const tiles = [], ranks = [];
+  const tile = (k, v, d, txt) => tiles.push({ k, v, d, txt });
+
+  // tiempo (TMDB)
+  const timed = withInfo.filter(x => x.i.runtime);
+  if (timed.length) {
+    const total = timed.reduce((t, x) => t + x.i.runtime, 0);
+    tile("Tiempo juntos", Math.round(total / 60) + " horas",
+      num((total / 1440).toFixed(1)) + " días seguidos · " + dur(Math.round(total / timed.length)) + " en promedio" +
+      (timed.length < both.length ? " · de " + timed.length + " con duración" : ""));
+    if (timed.length >= 3) {
+      const byRun = timed.slice().sort((a, b) => b.i.runtime - a.i.runtime);
+      tile("La más larga", label(byRun[0].w), dur(byRun[0].i.runtime), true);
+      tile("La más corta", label(byRun[byRun.length - 1].w), dur(byRun[byRun.length - 1].i.runtime), true);
+    }
+  }
+
+  // fechas (sin TMDB)
+  if (both.length >= 3) {
+    const first = both[both.length - 1];
+    const years = (Date.now() - dayMs(first.d)) / (365.25 * DAY);
+    tile("La primera", label(first), new Date(dayMs(first.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }) +
+      (years >= 1 ? " · hace " + num(years.toFixed(1)) + " años" : ""), true);
+  }
+  if (both.length >= 8) {
+    const months = {};
+    both.forEach(w => { const m = (w.d || "").slice(0, 7); if (m) months[m] = (months[m] || 0) + 1; });
+    const [bm, bn] = Object.entries(months).sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))[0] || [];
+    if (bn >= 2) tile("Mes récord", new Date(dayMs(bm + "-15")).toLocaleDateString("es-CL", { month:"long", year:"numeric" }), bn + " películas", true);
+    const DAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    const wd = [0, 0, 0, 0, 0, 0, 0];
+    both.forEach(w => { if (w.d) wd[new Date(dayMs(w.d)).getUTCDay()]++; });
+    const top = wd.indexOf(Math.max(...wd));
+    tile("Día favorito", DAYS[top], Math.round(wd[top] / both.length * 100) + " % de las películas", true);
+  }
+
+  // notas (sin TMDB)
+  const rateTxt = w => nameOf("a") + " " + stars(w.by.a.r) + " · " + nameOf("b") + " " + stars(w.by.b.r);
+  if (rated.length) {
+    const diff = rated.slice().sort((x, y) => Math.abs(y.by.a.r - y.by.b.r) - Math.abs(x.by.a.r - x.by.b.r))[0];
+    if (diff.by.a.r !== diff.by.b.r) tile("Mayor desacuerdo", label(diff), rateTxt(diff), true);
+  }
+  if (rated.length >= 3) {
+    const sum = w => w.by.a.r + w.by.b.r;
+    const byScore = rated.slice().sort((x, y) => sum(y) - sum(x));
+    tile("La mejor para ambos", label(byScore[0]), rateTxt(byScore[0]), true);
+    tile("La peor para ambos", label(byScore[byScore.length - 1]), rateTxt(byScore[byScore.length - 1]), true);
+  }
+  // comparación con TMDB: la nota de ustedes en /5 y la de TMDB en /10, cada una en su escala
+  const vsTmdb = withInfo.filter(x => x.w.by.a.r != null && x.w.by.b.r != null && x.i.tmdbVote != null && (x.i.tmdbVotes || 0) >= 50)
+    .map(x => ({ ...x, ours: (x.w.by.a.r + x.w.by.b.r) / 2, gap: (x.w.by.a.r + x.w.by.b.r) - x.i.tmdbVote }));
+  if (vsTmdb.length >= 5) {
+    vsTmdb.sort((x, y) => y.gap - x.gap);
+    const txt = x => "Ustedes " + num(x.ours) + "/5 · TMDB " + num(x.i.tmdbVote) + "/10";
+    tile("Les gustó más que al resto", label(vsTmdb[0].w), txt(vsTmdb[0]), true);
+    tile("Les gustó menos que al resto", label(vsTmdb[vsTmdb.length - 1].w), txt(vsTmdb[vsTmdb.length - 1]), true);
+  }
+  const older = withInfo.map(x => ({ ...x, yr: parseInt((x.i.release || "").slice(0, 4)) || x.w.y })).filter(x => x.yr);
+  if (older.length >= 3) {
+    older.sort((a, b) => a.yr - b.yr);
+    tile("La más antigua", label(older[0].w), (new Date().getFullYear() - older[0].yr) + " años", true);
+  }
+
+  // rankings
+  const rank = (title, counts, { min = 1, max = 5, need = 2, name = s => s } = {}) => {
+    const rows = Object.entries(counts).filter(([, n]) => n >= min).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+    if (rows.length < need) return;
+    ranks.push({ title, rows: rows.slice(0, max).map(([k, n]) => [name(k), n]), top: rows[0][1] });
+  };
+  const count = get => { const o = {}; withInfo.forEach(x => (get(x) || []).forEach(k => { if (k) o[k] = (o[k] || 0) + 1; })); return o; };
+  if (withInfo.length >= 3) rank("Géneros", count(x => x.i.genres));
+  const perYear = {};
+  both.forEach(w => { const y = (w.d || "").slice(0, 4); if (y) perYear[y] = (perYear[y] || 0) + 1; });
+  const yRows = Object.keys(perYear).sort().reverse();
+  if (yRows.length >= 2) ranks.push({ title: "Por año", rows: yRows.slice(0, 6).map(y => [y, perYear[y]]), top: Math.max(...Object.values(perYear)) });
+  rank("Décadas del estreno", count(x => { const y = parseInt((x.i.release || "").slice(0, 4)) || x.w.y; const dec = Math.floor(y / 10) * 10; return y ? ["Años " + (dec < 2000 ? dec % 100 : dec)] : []; }));
+  rank("Directores que se repiten", count(x => x.i.directors), { min: 2, need: 1 });
+  rank("Actores que se repiten", count(x => x.i.cast), { min: 2, need: 1 });
+  const dn = type => { try { const f = new Intl.DisplayNames(["es"], { type }); return c => { try { const s = f.of(c); return s.charAt(0).toUpperCase() + s.slice(1); } catch(e){ return c; } }; } catch(e){ return c => c; } };
+  rank("Países", count(x => x.i.countries), { name: dn("region") });
+  rank("Idiomas originales", count(x => x.i.lang ? [x.i.lang] : []), { name: dn("language") });
+
+  $("#togStats").replaceChildren(...tiles.map(t => {
+    const el = document.createElement("div"); el.className = "tstat";
+    const k = document.createElement("div"); k.className = "k"; k.textContent = t.k;
+    const v = document.createElement("div"); v.className = "v" + (t.txt ? " txt" : ""); v.textContent = t.v;
+    el.append(k, v);
+    if (t.d) { const d = document.createElement("div"); d.className = "d"; d.textContent = t.d; el.appendChild(d); }
+    return el;
+  }));
+  $("#togRanks").replaceChildren(...ranks.map(r => {
+    const el = document.createElement("div"); el.className = "trank";
+    const h = document.createElement("h3"); h.textContent = r.title;
+    const ol = document.createElement("ol");
+    r.rows.forEach(([name, n]) => {
+      const li = document.createElement("li");
+      const row = document.createElement("div"); row.className = "row";
+      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name; nm.title = name;
+      const ct = document.createElement("span"); ct.className = "ct"; ct.textContent = n;
+      row.append(nm, ct);
+      const bar = document.createElement("div"); bar.className = "bar";
+      const fill = document.createElement("span"); fill.style.width = Math.round(n / r.top * 100) + "%"; bar.appendChild(fill);
+      li.append(row, bar); ol.appendChild(li);
+    });
+    el.append(h, ol); return el;
+  }));
+  const note = $("#togInfoNote");
+  const missing = both.filter(w => w.tmdbId && !INFO[String(w.tmdbId)]).length;   // las sin tmdbId nunca tendrán datos
+  note.hidden = !(missing && state.mode === "firebase");
+  note.textContent = withInfo.length
+    ? "Duración, géneros y otros datos de TMDB disponibles para " + withInfo.length + " de " + both.length + " películas. El resto se completa en las próximas sincronizaciones."
+    : "La duración, los géneros y otros datos de TMDB aparecen después de la próxima sincronización.";
 }
 function catSorter(mode){
   const M = f => state.meta[f.k] || {};
@@ -1480,7 +1629,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-28-2";
+const APP_VERSION = "2026-09-30-1";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
