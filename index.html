@@ -231,13 +231,37 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .trank .bar{height:4px;margin-top:2px}
 .trank .thumbs{margin-top:8px}
 .trank .thumb .pic img{position:absolute}
-.tficha{display:flex;gap:12px;background:var(--panel);border:1.5px solid var(--bulb);border-radius:10px;padding:10px;margin:4px 0 8px}
-.tficha .fp{width:64px;height:96px;border-radius:5px;object-fit:cover;flex:none;background:var(--raised)}
-.tficha .fb{min-width:0;flex:1}
-.tficha .ft{font-weight:600;overflow-wrap:anywhere}
-.tficha .fl{font-size:13px;color:var(--muted)}
-.tficha .rt{display:flex;flex-wrap:wrap;gap:0 12px;font-size:14px;color:var(--muted);margin-top:4px}
-.tstat .tp,.tficha .fp{display:block}
+.tstat .tp{display:block}
+.tstat.click{cursor:pointer}
+.tstat.click:hover{border-color:var(--muted)}
+.together li.click{cursor:pointer}
+.together .tt-btn{all:unset;cursor:pointer;font-weight:600;overflow-wrap:anywhere}
+.together .tt-btn:focus-visible{outline:3px solid var(--b);outline-offset:2px;border-radius:3px}
+/* Ficha de película vista juntos: panel encima de la página */
+.tfilm{padding:0;border:1.5px solid var(--line);border-radius:16px;background:var(--panel);color:var(--ink);
+  width:min(560px,calc(100vw - 32px));max-width:none;max-height:min(88vh,780px);overflow-y:auto;overscroll-behavior:contain}
+.tfilm::backdrop{background:rgba(8,10,12,.72)}
+.tfilm[open]{animation:rise .25s ease-out}
+html:has(.tfilm[open]){overflow:hidden}
+.tf-close{position:absolute;top:10px;right:10px;z-index:2;width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;
+  background:rgba(14,17,20,.78);border-color:transparent;font-size:24px;font-weight:400;line-height:1}
+.tf-img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--raised)}
+.tf-img.poster{width:120px;aspect-ratio:2/3;border-radius:8px;margin:16px 16px 0}
+.tf-body{padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.tf-body h3{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.1;letter-spacing:.02em;margin:0 0 6px}
+.tf-body.solo h3{margin-right:48px}
+.tf-meta{font-size:14px;color:var(--muted);margin:0}
+.tf-syn{margin:12px 0;line-height:1.55}
+.tf-syn.pending{color:var(--muted);font-style:italic}
+.tf-seen{font-size:14px;color:var(--muted);margin:0}
+.tfilm .rt{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:15px;color:var(--muted);margin:4px 0 14px}
+.tf-actions{display:flex;gap:8px;flex-wrap:wrap}
+.tf-actions .btn{flex:1 1 auto;border-color:var(--bulb);color:var(--bulb)}
+@media (max-width:560px){
+  .tfilm{width:100vw;max-height:90vh;margin:auto 0 0;border-radius:16px 16px 0 0;border-bottom:0}
+  .tfilm[open]{animation:sheet .28s ease-out}
+}
+@keyframes sheet{from{transform:translateY(100%)}to{transform:none}}
 .tog-pend{margin:0 0 14px;border-top:1px solid var(--line)}
 .tog-pend summary{color:var(--muted);font-weight:500}
 .again{width:100%;margin-top:8px;border-color:var(--bulb);color:var(--bulb)}
@@ -326,6 +350,7 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
   .force-motion .duel.enter .pick{animation:rise .4s ease-out backwards}
   .force-motion .marquee.spinning::before{animation:chase .32s linear infinite}
   .force-motion .card.reveal{animation:rise .45s ease-out}
+  html:not(.force-motion) .tfilm[open]{animation:none}
   #toast{transition:none}
 }
 </style>
@@ -514,6 +539,10 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
     <p class="hint" style="margin-top:14px">Datos e imágenes de películas: TMDB. Disponibilidad en plataformas: JustWatch. Este producto usa la API de TMDB, pero no está respaldado ni certificado por TMDB.</p>
   </section>
 </main>
+<dialog class="tfilm" id="togFilm" aria-labelledby="tfTitle">
+  <button class="tf-close" type="button" aria-label="Cerrar">×</button>
+  <div id="tfContent"></div>
+</dialog>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="config.js"></script>
@@ -1316,7 +1345,7 @@ function renderMarks(){
   $("#dHist ul").replaceChildren(...(state.spins.length ? state.spins.map(s => listRow(s.t + (s.y ? " (" + s.y + ")" : ""), fmtDate(s.at))) : [listRow("Todavía no se gira.", "")]));
 }
 const stars = r => r == null ? "sin nota" : "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½" : "");
-let togOpen = null, togFicha = null;   // fila de ranking abierta ({ r, k }) y mini ficha abierta (id en together)
+let togOpen = null;   // fila de ranking abierta ({ r, k })
 function renderTogether(){
   const W = Object.values(state.watched || {});
   const dayMs = d => Date.parse(d + "T12:00:00Z");
@@ -1342,7 +1371,16 @@ function renderTogether(){
     if (w.poster) { const i = document.createElement("img"); i.src = "https://image.tmdb.org/t/p/w92" + w.poster; i.alt = ""; i.loading = "lazy"; li.appendChild(i); }
     else { const n = document.createElement("span"); n.className = "noimg"; li.appendChild(n); }
     const body = document.createElement("div"); body.className = "body";
-    const tt = document.createElement("div"); tt.className = "tt"; tt.textContent = w.t + (w.y ? " (" + w.y + ")" : ""); body.appendChild(tt);
+    const tt = document.createElement("div"); tt.className = "tt";
+    const title = w.t + (w.y ? " (" + w.y + ")" : "");
+    if (pendingSlot) tt.textContent = title;
+    else {
+      // toda la fila abre la ficha; el título es el botón para quien navega con teclado
+      const b = document.createElement("button"); b.type = "button"; b.className = "tt-btn"; b.textContent = title;
+      tt.appendChild(b); li.classList.add("click");
+      li.addEventListener("click", e => { if (!e.target.closest("a")) openTogFilm(w); });
+    }
+    body.appendChild(tt);
     const e0 = w.by.a || w.by.b;
     const dt = document.createElement("div"); dt.className = "dt"; dt.textContent = new Date(dayMs(w.d || e0.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }); body.appendChild(dt);
     const rates = document.createElement("div"); rates.className = "rates";
@@ -1375,7 +1413,6 @@ function renderTogetherStats(both, rated){
   const num = n => String(n).replace(".", ",");
   const label = w => w.t + (w.y ? " (" + w.y + ")" : "");
   const dur = m => Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
-  const fmtDay = d => new Date(dayMs(d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" });
   const money = n => n >= 1e9 ? "US$ " + num((n / 1e9).toFixed(1)) + " mil millones" : "US$ " + Math.round(n / 1e6).toLocaleString("es-CL") + " millones";
   const INFO = state.togetherInfo || {};
   const infoOf = w => { const i = INFO[String(w.tmdbId)]; return i && !i.missing ? i : null; };
@@ -1534,7 +1571,13 @@ function renderTogetherStats(both, rated){
   };
   const tileEl = t => {
     const box = el("div", "tstat" + (t.hero ? " hero" : "") + (t.wide ? " wide" : ""));
-    if (t.w && !t.hero) box.appendChild(poster(t.w, "w92", "tp"));
+    if (t.w && !t.hero) {
+      box.appendChild(poster(t.w, "w92", "tp"));
+      box.classList.add("click"); box.tabIndex = 0; box.setAttribute("role", "button");
+      box.setAttribute("aria-label", t.k + ": " + label(t.w) + ". Ver ficha");
+      box.addEventListener("click", () => openTogFilm(t.w));
+      box.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openTogFilm(t.w); } });
+    }
     const b = el("div", "tb");
     b.appendChild(el("div", "k", t.k));
     const v = el("div", "v" + (t.txt ? " txt" : ""));
@@ -1560,18 +1603,6 @@ function renderTogetherStats(both, rated){
     sec.append(el("h3", null, title), grid); return sec;
   }));
 
-  const ficha = w => {
-    const i = infoOf(w), box = el("div", "tficha");
-    box.appendChild(poster(w, "w154", "fp"));
-    const b = el("div", "fb");
-    b.appendChild(el("div", "ft", label(w)));
-    const line = [i && i.directors && i.directors.length ? i.directors.join(", ") : "", i && i.runtime ? dur(i.runtime) : ""].filter(Boolean).join(" · ");
-    if (line) b.appendChild(el("div", "fl", line));
-    if (i && i.genres && i.genres.length) b.appendChild(el("div", "fl", i.genres.join(", ")));
-    b.appendChild(el("div", "fl", "Vista juntos el " + fmtDay(w.d)));
-    b.appendChild(ratesEl(w, true));
-    box.appendChild(b); return box;
-  };
   $("#togRanks").replaceChildren(...(ranks.length ? [(() => {
     const sec = el("section", "tgroup"), grid = el("div", "tranks");
     grid.append(...ranks.map(r => {
@@ -1582,23 +1613,21 @@ function renderTogetherStats(both, rated){
         const btn = el("button", "row"); btn.type = "button"; btn.setAttribute("aria-expanded", String(open));
         const nm = el("span", "nm", row.name); nm.title = row.name;
         btn.append(nm, el("span", "ct", row.films.length));
-        btn.addEventListener("click", () => { togOpen = open ? null : { r: r.title, k: row.k }; togFicha = null; renderTogether(); });
+        btn.addEventListener("click", () => { togOpen = open ? null : { r: r.title, k: row.k }; renderTogether(); });
         const bar = el("div", "bar"), fill = el("span"); fill.style.width = Math.round(row.films.length / r.top * 100) + "%"; bar.appendChild(fill);
         li.append(btn, bar);
         if (open) {
           const films = row.films.slice().sort((a, b) => (b.d || "").localeCompare(a.d || ""));
           const strip = el("div", "thumbs");
           films.forEach(w => {
-            const t = el("button", "thumb" + (togFicha === w.id ? " now" : "")); t.type = "button";
+            const t = el("button", "thumb"); t.type = "button";
             const pic = el("span", "pic", w.poster ? "" : w.t);
             if (w.poster) { const im = el("img"); im.src = "https://image.tmdb.org/t/p/w92" + w.poster; im.alt = ""; im.loading = "lazy"; pic.appendChild(im); }
             t.append(pic, el("span", "cap", w.t));
-            t.addEventListener("click", () => { togFicha = togFicha === w.id ? null : w.id; renderTogether(); });
+            t.addEventListener("click", () => openTogFilm(w));
             strip.appendChild(t);
           });
           li.appendChild(strip);
-          const sel = films.find(w => w.id === togFicha);
-          if (sel) li.appendChild(ficha(sel));
         }
         ol.appendChild(li);
       });
@@ -1614,6 +1643,50 @@ function renderTogetherStats(both, rated){
   note.textContent = withInfo.length
     ? "Duración, géneros y otros datos de TMDB disponibles para " + withInfo.length + " de " + both.length + " películas. El resto se completa en las próximas sincronizaciones."
     : "La duración, los géneros y otros datos de TMDB aparecen después de la próxima sincronización.";
+}
+/* Ficha de una película vista juntos, en un panel encima de la página */
+function openTogFilm(w){
+  const raw = (state.togetherInfo || {})[String(w.tmdbId)], i = raw && !raw.missing ? raw : {};
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const dur = m => Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
+  const out = [];
+  const img = el("img", "tf-img"); img.alt = "";
+  if (i.backdrop) { img.src = "https://image.tmdb.org/t/p/w780" + i.backdrop; out.push(img); }
+  else if (w.poster) { img.classList.add("poster"); img.src = "https://image.tmdb.org/t/p/w342" + w.poster; out.push(img); }
+  const body = el("div", "tf-body" + (out.length ? "" : " solo"));
+  img.onerror = () => {   // si falla la imagen ancha, el póster; si tampoco hay, sin imagen
+    if (!img.classList.contains("poster") && w.poster) { img.classList.add("poster"); img.src = "https://image.tmdb.org/t/p/w342" + w.poster; }
+    else { img.remove(); body.classList.add("solo"); }
+  };
+  const h = el("h3", null, w.t + (w.y ? " (" + w.y + ")" : "")); h.id = "tfTitle"; body.appendChild(h);
+  const line = [i.directors && i.directors.length ? i.directors.join(", ") : "", i.runtime ? dur(i.runtime) : "",
+    i.tmdbVote != null ? "TMDB " + String(i.tmdbVote).replace(".", ",") + "/10" : ""].filter(Boolean).join(" · ");
+  if (line) body.appendChild(el("p", "tf-meta", line));
+  if (i.genres && i.genres.length) body.appendChild(el("p", "tf-meta", i.genres.join(", ")));
+  if (i.cast && i.cast.length) body.appendChild(el("p", "tf-meta", "Con " + i.cast.slice(0, 3).join(", ")));
+  const syn = el("p", "tf-syn");
+  if (i.overview) syn.textContent = i.overview + (i.overviewLang === "en" ? " (TMDB no tiene resumen en español)" : "");
+  else { syn.classList.add("pending"); syn.textContent = raw && raw.missing ? "TMDB no tiene datos de esta película."
+    : "overview" in i ? "TMDB no tiene resumen para esta película." : "El resumen llega en la próxima sincronización."; }
+  body.appendChild(syn);
+  body.appendChild(el("p", "tf-seen", "Vista juntos el " + new Date(Date.parse(w.d + "T12:00:00Z")).toLocaleDateString("es-CL", { day:"numeric", month:"long", year:"numeric" })));
+  const rt = el("div", "rt");
+  ["a", "b"].forEach(s => {
+    const e = w.by[s]; if (!e) return;
+    const a = el(e.u ? "a" : "span"); if (e.u) { a.href = e.u; a.target = "_blank"; a.rel = "noopener noreferrer"; a.title = "Abrir su registro en Letterboxd"; }
+    a.append(nameOf(s) + " ", el("span", "st " + s, stars(e.r))); rt.appendChild(a);
+  });
+  body.appendChild(rt);
+  if (i.trailer) {
+    const act = el("div", "tf-actions"), a = el("a", "btn", "Ver tráiler");
+    a.href = "https://www.youtube.com/watch?v=" + encodeURIComponent(i.trailer); a.target = "_blank"; a.rel = "noopener noreferrer";
+    act.appendChild(a); body.appendChild(act);
+  }
+  out.push(body);
+  const dlg = $("#togFilm");
+  $("#tfContent").replaceChildren(...out);
+  if (!dlg.open) dlg.showModal();
+  dlg.scrollTop = 0;
 }
 function catSorter(mode){
   const M = f => state.meta[f.k] || {};
@@ -1749,6 +1822,8 @@ $("#shortClear").addEventListener("click", clearShort);
 $("#tinca").addEventListener("click", toggleTinca);
 $("#backDuel").addEventListener("click", () => $("#marquee").scrollIntoView({ behavior: reduceMotion() ? "auto" : "smooth", block: "start" }));
 $("#togBox").addEventListener("toggle", renderTogether);
+$("#togFilm .tf-close").addEventListener("click", () => $("#togFilm").close());
+$("#togFilm").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close(); });   // toque fuera del panel
 window.addEventListener("resize", () => { if (!spinning) place(stripIndex); });
 document.querySelectorAll("#scope button").forEach(b => b.addEventListener("click", () => {
   if (spinning) return;
@@ -1788,7 +1863,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-30-4";
+const APP_VERSION = "2026-09-30-5";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
