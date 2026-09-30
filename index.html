@@ -190,23 +190,55 @@ button:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:default;pointer-ev
 .together .rates a{text-decoration:none}
 .together .stars{color:var(--bulb);letter-spacing:1px}
 .together .verdict{font-size:13px;color:var(--muted);margin-top:2px}
-.tstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 16px}
-.tstat{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.tgroup{margin:0 0 18px}
+.tgroup>h3{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.08em;text-transform:uppercase;color:var(--bulb);margin:0 0 8px}
+.tnote{font-size:13px;color:var(--muted);margin:-4px 0 8px}
+.tstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tstat{background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0;display:flex;gap:10px;align-items:flex-start}
+.tstat .tp{width:40px;height:60px;border-radius:4px;object-fit:cover;flex:none;background:var(--raised)}
+.tstat .tb{min-width:0;flex:1}
 .tstat .k{font-size:12px;color:var(--muted)}
 .tstat .v{font-family:var(--display);font-weight:700;font-size:24px;line-height:1.15;overflow-wrap:anywhere}
 .tstat .v.txt{font-family:var(--text);font-size:15px;font-weight:600;line-height:1.3}
+.tstat .v .dot{vertical-align:4px}
 .tstat .d{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
-.tranks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin:0 0 14px}
-.tranks:empty,.tstats:empty{display:none}
-@media (max-width:420px){.tranks{grid-template-columns:1fr}.tstat .v.txt{font-size:14px}}
+.tstat.wide{grid-column:1/-1}
+.tstat.hero{grid-column:1/-1;position:relative;display:block;text-align:center;background:var(--marquee);border-radius:12px;padding:13px 18px 11px}
+.tstat.hero::before{content:"";position:absolute;inset:4px;border-radius:9px;padding:5px;pointer-events:none;
+  background:radial-gradient(circle at center,var(--bulb) 0 1.8px,transparent 2.4px) 0 0/11px 11px;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);opacity:.55;filter:drop-shadow(0 0 3px var(--bulb))}
+.tstat.hero .k{text-transform:uppercase;letter-spacing:.14em;color:var(--marquee-muted)}
+.tstat.hero .v{font-size:34px;font-weight:800;line-height:1;color:var(--bulb);margin:2px 0}
+.tstat.hero .d{color:var(--marquee-muted)}
+.tstat .rt{display:flex;flex-wrap:wrap;gap:0 10px;font-size:13px;color:var(--muted);margin-top:2px}
+.rt .st{letter-spacing:1px}.rt .st.a{color:var(--a)}.rt .st.b{color:var(--b)}
+.rt a{text-decoration:none}
+.wk{display:flex;gap:4px;height:48px;margin-top:6px}
+.wk div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:2px;font-size:10px;color:var(--muted);text-align:center}
+.wk i{display:block;background:var(--raised);border-radius:3px 3px 0 0;min-height:2px}
+.wk .top i{background:var(--bulb)}.wk .top{color:var(--bulb)}
+.tranks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+@media (max-width:420px){.tranks{grid-template-columns:1fr}.tstat .v.txt{font-size:14px}.tstat{padding:10px;gap:8px}.tstat .tp{width:30px;height:45px}}
 .trank h3{font-family:var(--text);font-size:13px;font-weight:600;color:var(--muted);margin:0 0 4px}
 .trank ol{list-style:none;margin:0;padding:0}
 .trank li{display:block;padding:3px 0;border:0;font-size:14px}
-.trank .row{display:flex;justify-content:space-between;gap:8px}
+.trank .row{display:flex;justify-content:space-between;gap:8px;width:100%;min-height:26px;padding:0;border:0;border-radius:4px;background:none;
+  font:inherit;font-size:14px;font-weight:400;color:var(--ink);text-align:left;cursor:pointer}
+.trank li.open .row .nm{color:var(--bulb);font-weight:600}
 .trank .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trank .ct{color:var(--muted);font-variant-numeric:tabular-nums;flex:none}
 .trank .bar{height:4px;margin-top:2px}
-.tog-pend{margin:0 0 6px;border-top:1px solid var(--line)}
+.trank .thumbs{margin-top:8px}
+.trank .thumb .pic img{position:absolute}
+.tficha{display:flex;gap:12px;background:var(--panel);border:1.5px solid var(--bulb);border-radius:10px;padding:10px;margin:4px 0 8px}
+.tficha .fp{width:64px;height:96px;border-radius:5px;object-fit:cover;flex:none;background:var(--raised)}
+.tficha .fb{min-width:0;flex:1}
+.tficha .ft{font-weight:600;overflow-wrap:anywhere}
+.tficha .fl{font-size:13px;color:var(--muted)}
+.tficha .rt{display:flex;flex-wrap:wrap;gap:0 12px;font-size:14px;color:var(--muted);margin-top:4px}
+.tstat .tp,.tficha .fp{display:block}
+.tog-pend{margin:0 0 14px;border-top:1px solid var(--line)}
 .tog-pend summary{color:var(--muted);font-weight:500}
 .again{width:100%;margin-top:8px;border-color:var(--bulb);color:var(--bulb)}
 .card.reveal{animation:rise .45s ease-out}
@@ -464,13 +496,13 @@ details li button{min-height:36px;padding:6px 12px;font-size:14px}
 
   <section class="block">
     <details class="catbox" id="togBox">
-      <summary><h2>Vistas juntos</h2><span class="catcount" id="togCount"></span><span class="chev" aria-hidden="true"></span></summary>
+      <summary><h2>Estadísticas</h2><span class="catcount" id="togCount"></span><span class="chev" aria-hidden="true"></span></summary>
       <p class="tog-sum" id="togSummary"></p>
-      <div class="tstats" id="togStats"></div>
-      <div class="tranks" id="togRanks"></div>
+      <div id="togStats"></div>
+      <div id="togRanks"></div>
       <p class="hint" id="togInfoNote" hidden></p>
+      <section class="tgroup" id="togListBox" hidden><h3>Vistas juntos</h3><ul class="together" id="togList"></ul></section>
       <details class="log tog-pend" id="togPending" hidden><summary>Por confirmar (<span class="n">0</span>)</summary><ul class="together"></ul></details>
-      <ul class="together" id="togList"></ul>
       <p class="hint">Sale de los diarios de Letterboxd: cuenta como vista juntos cuando ambos registran la misma película con hasta 3 días de diferencia. Toca una nota para abrir ese registro. Para traer el historial completo, cada uno sube su exportación de Letterboxd en su lista (el .zip trae el diario). Lo guardado aquí es permanente: no cambia aunque cambien usuarios o importaciones.</p>
     </details>
   </section>
@@ -1284,12 +1316,13 @@ function renderMarks(){
   $("#dHist ul").replaceChildren(...(state.spins.length ? state.spins.map(s => listRow(s.t + (s.y ? " (" + s.y + ")" : ""), fmtDate(s.at))) : [listRow("Todavía no se gira.", "")]));
 }
 const stars = r => r == null ? "sin nota" : "★".repeat(Math.floor(r)) + (r % 1 >= 0.5 ? "½" : "");
+let togOpen = null, togFicha = null;   // fila de ranking abierta ({ r, k }) y mini ficha abierta (id en together)
 function renderTogether(){
   const W = Object.values(state.watched || {});
   const dayMs = d => Date.parse(d + "T12:00:00Z");
   // registros permanentes, guardados por la tarea; se adaptan a la forma que usa la lista
-  const both = Object.values(state.together || {}).filter(t => t.a && t.b)
-    .map(t => ({ t: t.t, y: t.y, poster: t.poster, tmdbId: t.tmdbId, d: t.d, by: { a: t.a, b: t.b } }))
+  const both = Object.entries(state.together || {}).filter(([, t]) => t.a && t.b)
+    .map(([id, t]) => ({ id, t: t.t, y: t.y, poster: t.poster, tmdbId: t.tmdbId, d: t.d, by: { a: t.a, b: t.b } }))
     .sort((x, y) => (y.d || "").localeCompare(x.d || ""));
   const recent = Date.now() - 7 * DAY;
   const pairedRecently = new Set(both.filter(p => dayMs(p.d) >= recent - 7 * DAY).map(p => p.tmdbId));
@@ -1333,6 +1366,7 @@ function renderTogether(){
   $("#togPending").hidden = !waiting.length;
   $("#togPending .n").textContent = waiting.length;
   $("#togPending ul").replaceChildren(...waiting.map(w => item(w, w.by.a ? "b" : "a")));
+  $("#togListBox").hidden = !both.length;
   $("#togList").replaceChildren(...both.slice(0, 200).map(w => item(w)));
 }
 /* Estadísticas de "Vistas juntos". Cada una aparece solo si hay datos suficientes para que diga algo. */
@@ -1341,55 +1375,76 @@ function renderTogetherStats(both, rated){
   const num = n => String(n).replace(".", ",");
   const label = w => w.t + (w.y ? " (" + w.y + ")" : "");
   const dur = m => Math.floor(m / 60) + " h" + (m % 60 ? " " + m % 60 + " min" : "");
+  const fmtDay = d => new Date(dayMs(d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" });
+  const money = n => n >= 1e9 ? "US$ " + num((n / 1e9).toFixed(1)) + " mil millones" : "US$ " + Math.round(n / 1e6).toLocaleString("es-CL") + " millones";
   const INFO = state.togetherInfo || {};
-  const withInfo = both.map(w => ({ w, i: INFO[String(w.tmdbId)] })).filter(x => x.i && !x.i.missing);
-  const tiles = [], ranks = [];
-  const tile = (k, v, d, txt) => tiles.push({ k, v, d, txt });
+  const infoOf = w => { const i = INFO[String(w.tmdbId)]; return i && !i.missing ? i : null; };
+  const withInfo = both.map(w => ({ w, i: infoOf(w) })).filter(x => x.i);
+  const yearOf = x => parseInt((x.i.release || "").slice(0, 4)) || parseInt(x.w.y) || null;
+  const asc = both.slice().reverse();   // de la más antigua a la más nueva
+  // cada tarjeta: k (título), v (dato), d (detalle), w (película: muestra el póster), rates (película: nota de cada uno),
+  // txt (v es un título de película), dot (color de quién), chart (barras por día), hero (la grande), wide (todo el ancho)
+  const groups = { time: [], notes: [], films: [] };
+  const add = (g, t) => groups[g].push(t);
 
-  // tiempo (TMDB)
+  // El tiempo
   const timed = withInfo.filter(x => x.i.runtime);
   if (timed.length) {
     const total = timed.reduce((t, x) => t + x.i.runtime, 0);
-    tile("Tiempo juntos", Math.round(total / 60) + " horas",
-      num((total / 1440).toFixed(1)) + " días seguidos · " + dur(Math.round(total / timed.length)) + " en promedio" +
-      (timed.length < both.length ? " · de " + timed.length + " con duración" : ""));
-    if (timed.length >= 3) {
-      const byRun = timed.slice().sort((a, b) => b.i.runtime - a.i.runtime);
-      tile("La más larga", label(byRun[0].w), dur(byRun[0].i.runtime), true);
-      tile("La más corta", label(byRun[byRun.length - 1].w), dur(byRun[byRun.length - 1].i.runtime), true);
-    }
+    add("time", { hero: true, k: "Tiempo juntos", v: Math.round(total / 60) + " horas",
+      d: num((total / 1440).toFixed(1)) + " días seguidos · " + dur(Math.round(total / timed.length)) + " por película" +
+        (timed.length < both.length ? " · de " + timed.length + " con duración" : "") });
   }
-
-  // fechas (sin TMDB)
-  if (both.length >= 3) {
-    const first = both[both.length - 1];
-    const years = (Date.now() - dayMs(first.d)) / (365.25 * DAY);
-    tile("La primera", label(first), new Date(dayMs(first.d)).toLocaleDateString("es-CL", { day:"numeric", month:"short", year:"numeric" }) +
-      (years >= 1 ? " · hace " + num(years.toFixed(1)) + " años" : ""), true);
+  if (both.length) {
+    const last = both[0], days = Math.floor((Date.now() - dayMs(last.d)) / DAY);
+    add("time", { k: "Última vez", v: days <= 0 ? "hoy" : days === 1 ? "ayer" : "hace " + days + " días", d: label(last), w: last });
+  }
+  if (both.length >= 5) {
+    const months = (Date.now() - dayMs(asc[0].d)) / (30.44 * DAY);
+    if (months >= 2) add("time", { k: "Ritmo", v: num((both.length / months).toFixed(1)) + " al mes",
+      d: "desde " + new Date(dayMs(asc[0].d)).toLocaleDateString("es-CL", { month:"long", year:"numeric" }) });
+    let gap = 0, gi = 0;
+    for (let i = 1; i < asc.length; i++) { const g = (dayMs(asc[i].d) - dayMs(asc[i - 1].d)) / DAY; if (g > gap) { gap = g; gi = i; } }
+    if (gap >= 7) add("time", { k: "La sequía más larga", v: Math.round(gap) + " días", d: "entre " + asc[gi - 1].t + " y " + asc[gi].t });
   }
   if (both.length >= 8) {
     const months = {};
     both.forEach(w => { const m = (w.d || "").slice(0, 7); if (m) months[m] = (months[m] || 0) + 1; });
     const [bm, bn] = Object.entries(months).sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]))[0] || [];
-    if (bn >= 2) tile("Mes récord", new Date(dayMs(bm + "-15")).toLocaleDateString("es-CL", { month:"long", year:"numeric" }), bn + " películas", true);
+    if (bn >= 2) add("time", { k: "Mes récord", v: new Date(dayMs(bm + "-15")).toLocaleDateString("es-CL", { month:"long", year:"numeric" }), d: bn + " películas" });
     const DAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
     const wd = [0, 0, 0, 0, 0, 0, 0];
     both.forEach(w => { if (w.d) wd[new Date(dayMs(w.d)).getUTCDay()]++; });
-    const top = wd.indexOf(Math.max(...wd));
-    tile("Día favorito", DAYS[top], Math.round(wd[top] / both.length * 100) + " % de las películas", true);
+    const mx = Math.max(...wd), tops = [1, 2, 3, 4, 5, 6, 0].filter(i => wd[i] === mx).map(i => DAYS[i]);
+    if (tops.length <= 3) add("time", { k: tops.length > 1 ? "Días favoritos" : "Día favorito", wide: true, chart: wd,
+      v: tops.length > 1 ? tops.slice(0, -1).join(", ") + " y " + tops[tops.length - 1] : tops[0],
+      d: tops.length > 1 ? "empatados con " + mx + " películas cada uno" : Math.round(mx / both.length * 100) + " % de las películas" });
   }
 
-  // notas (sin TMDB)
-  const rateTxt = w => nameOf("a") + " " + stars(w.by.a.r) + " · " + nameOf("b") + " " + stars(w.by.b.r);
+  // Las notas
   if (rated.length) {
     const diff = rated.slice().sort((x, y) => Math.abs(y.by.a.r - y.by.b.r) - Math.abs(x.by.a.r - x.by.b.r))[0];
-    if (diff.by.a.r !== diff.by.b.r) tile("Mayor desacuerdo", label(diff), rateTxt(diff), true);
+    if (diff.by.a.r !== diff.by.b.r) add("notes", { k: "Mayor desacuerdo", v: label(diff), txt: true, w: diff, rates: diff });
   }
   if (rated.length >= 3) {
     const sum = w => w.by.a.r + w.by.b.r;
     const byScore = rated.slice().sort((x, y) => sum(y) - sum(x));
-    tile("La mejor para ambos", label(byScore[0]), rateTxt(byScore[0]), true);
-    tile("La peor para ambos", label(byScore[byScore.length - 1]), rateTxt(byScore[byScore.length - 1]), true);
+    add("notes", { k: "La mejor para ambos", v: label(byScore[0]), txt: true, w: byScore[0], rates: byScore[0] });
+    add("notes", { k: "La peor para ambos", v: label(byScore[byScore.length - 1]), txt: true, w: byScore[byScore.length - 1], rates: byScore[byScore.length - 1] });
+  }
+  if (rated.length >= 5) {
+    const m = rated.reduce((t, w) => t + w.by.a.r - w.by.b.r, 0) / rated.length;
+    add("notes", Math.abs(m) < 0.05
+      ? { k: "Más generoso con la nota", v: "Empate", d: "Ponen la misma nota en promedio" }
+      : { k: "Más generoso con la nota", v: nameOf(m > 0 ? "a" : "b"), dot: m > 0 ? "a" : "b", d: "+" + num(Math.abs(m).toFixed(1)) + " estrellas en promedio" });
+  }
+  if (both.length >= 5) {
+    let a = 0, b = 0;
+    both.forEach(w => { if (w.by.a.d < w.by.b.d) a++; else if (w.by.b.d < w.by.a.d) b++; });
+    const sameDay = both.length - a - b, extra = sameDay ? " · el mismo día en " + sameDay : "";
+    if (a + b >= 3) add("notes", a === b
+      ? { k: "Quién la registra primero", v: "Empate", d: a + " y " + b + extra }
+      : { k: "Quién la registra primero", v: nameOf(a > b ? "a" : "b"), dot: a > b ? "a" : "b", d: "en " + Math.max(a, b) + " de " + both.length + extra });
   }
   // comparación con TMDB: la nota de ustedes en /5 y la de TMDB en /10, cada una en su escala
   const vsTmdb = withInfo.filter(x => x.w.by.a.r != null && x.w.by.b.r != null && x.i.tmdbVote != null && (x.i.tmdbVotes || 0) >= 50)
@@ -1397,58 +1452,162 @@ function renderTogetherStats(both, rated){
   if (vsTmdb.length >= 5) {
     vsTmdb.sort((x, y) => y.gap - x.gap);
     const txt = x => "Ustedes " + num(x.ours) + "/5 · TMDB " + num(x.i.tmdbVote) + "/10";
-    tile("Les gustó más que al resto", label(vsTmdb[0].w), txt(vsTmdb[0]), true);
-    tile("Les gustó menos que al resto", label(vsTmdb[vsTmdb.length - 1].w), txt(vsTmdb[vsTmdb.length - 1]), true);
-  }
-  const older = withInfo.map(x => ({ ...x, yr: parseInt((x.i.release || "").slice(0, 4)) || x.w.y })).filter(x => x.yr);
-  if (older.length >= 3) {
-    older.sort((a, b) => a.yr - b.yr);
-    tile("La más antigua", label(older[0].w), (new Date().getFullYear() - older[0].yr) + " años", true);
+    const hi = vsTmdb[0], lo = vsTmdb[vsTmdb.length - 1];
+    add("notes", { k: "Les gustó más que al resto", v: label(hi.w), txt: true, w: hi.w, d: txt(hi) });
+    add("notes", { k: "Les gustó menos que al resto", v: label(lo.w), txt: true, w: lo.w, d: txt(lo) });
   }
 
-  // rankings
-  const rank = (title, counts, { min = 1, max = 5, need = 2, name = s => s } = {}) => {
-    const rows = Object.entries(counts).filter(([, n]) => n >= min).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+  // Las películas
+  if (timed.length >= 3) {
+    const byRun = timed.slice().sort((a, b) => b.i.runtime - a.i.runtime), L = byRun[0], S = byRun[byRun.length - 1];
+    add("films", { k: "La más larga", v: label(L.w), txt: true, w: L.w, d: dur(L.i.runtime) });
+    add("films", { k: "La más corta", v: label(S.w), txt: true, w: S.w, d: dur(S.i.runtime) });
+  }
+  const dated = withInfo.filter(x => yearOf(x));
+  if (dated.length >= 3) {
+    const old = dated.slice().sort((a, b) => yearOf(a) - yearOf(b))[0];
+    add("films", { k: "La más antigua", v: label(old.w), txt: true, w: old.w, d: (new Date().getFullYear() - yearOf(old)) + " años" });
+  }
+  const voted = withInfo.filter(x => x.i.tmdbVotes > 0);
+  if (voted.length >= 5) {
+    const gem = voted.slice().sort((a, b) => a.i.tmdbVotes - b.i.tmdbVotes)[0];
+    add("films", { k: "La joya escondida", v: label(gem.w), txt: true, w: gem.w, d: "la menos votada en TMDB: " + gem.i.tmdbVotes.toLocaleString("es-CL") + " votos" });
+  }
+  if (dated.length >= 5) {
+    const fresh = dated.filter(x => String(yearOf(x)) === (x.w.d || "").slice(0, 4)).length;
+    if (fresh) add("films", { k: "Estrenos frescos", v: fresh + " de " + dated.length, d: "vistas el mismo año de su estreno" });
+  }
+  const times = {};
+  both.forEach(w => { if (w.tmdbId) (times[w.tmdbId] = times[w.tmdbId] || []).push(w); });
+  const again = Object.values(times).filter(a => a.length >= 2).sort((a, b) => b.length - a.length);
+  if (again.length) add("films", { k: again.length === 1 ? "Vista más de una vez juntos" : "Vistas más de una vez juntos",
+    v: again.map(a => a[0].t).join(" · "), txt: true, w: again[0][0], d: again.map(a => a.length + " veces").join(" · ") });
+  const budgets = withInfo.filter(x => x.i.budget > 0);
+  if (budgets.length >= 3) {
+    const top = budgets.slice().sort((a, b) => b.i.budget - a.i.budget)[0];
+    add("films", { k: "Presupuesto sumado", v: money(budgets.reduce((t, x) => t + x.i.budget, 0)),
+      d: (budgets.length < withInfo.length ? "de " + budgets.length + " con dato · " : "") + "la más cara: " + top.w.t + " (" + money(top.i.budget) + ")" });
+  }
+  const sagas = {};
+  withInfo.forEach(x => { const s = x.i.saga; if (s && s.id) (sagas[s.id] = sagas[s.id] || { s, ids: new Set() }).ids.add(x.w.tmdbId); });
+  const sagaRows = Object.values(sagas).filter(g => g.ids.size >= 2).sort((a, b) => b.ids.size - a.ids.size);
+  if (sagaRows.length) add("films", { k: "Sagas", txt: true,
+    v: sagaRows.slice(0, 3).map(g => g.s.name + ": " + g.ids.size + (g.s.parts ? " de " + g.s.parts : "")).join(" · ") });
+
+  // Rankings: cada fila guarda sus películas para mostrarlas al tocarla
+  const ranks = [];
+  const rank = (title, map, { min = 1, max = 5, need = 2, name = s => s, order } = {}) => {
+    let rows = Object.entries(map).filter(([, f]) => f.length >= min);
+    rows.sort(order || ((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], "es")));
     if (rows.length < need) return;
-    ranks.push({ title, rows: rows.slice(0, max).map(([k, n]) => [name(k), n]), top: rows[0][1] });
+    rows = rows.slice(0, max);
+    ranks.push({ title, rows: rows.map(([k, f]) => ({ k, name: name(k), films: f })), top: Math.max(...rows.map(r => r[1].length)) });
   };
-  const count = get => { const o = {}; withInfo.forEach(x => (get(x) || []).forEach(k => { if (k) o[k] = (o[k] || 0) + 1; })); return o; };
-  if (withInfo.length >= 3) rank("Géneros", count(x => x.i.genres));
-  const perYear = {};
-  both.forEach(w => { const y = (w.d || "").slice(0, 4); if (y) perYear[y] = (perYear[y] || 0) + 1; });
-  const yRows = Object.keys(perYear).sort().reverse();
-  if (yRows.length >= 2) ranks.push({ title: "Por año", rows: yRows.slice(0, 6).map(y => [y, perYear[y]]), top: Math.max(...Object.values(perYear)) });
-  rank("Décadas del estreno", count(x => { const y = parseInt((x.i.release || "").slice(0, 4)) || x.w.y; const dec = Math.floor(y / 10) * 10; return y ? ["Años " + (dec < 2000 ? dec % 100 : dec)] : []; }));
-  rank("Directores que se repiten", count(x => x.i.directors), { min: 2, need: 1 });
-  rank("Actores que se repiten", count(x => x.i.cast), { min: 2, need: 1 });
+  const collect = (list, get) => {
+    const o = {};
+    list.forEach(x => new Set(get(x) || []).forEach(k => { if (k) (o[k] = o[k] || []).push(x.w); }));
+    return o;
+  };
+  if (withInfo.length >= 3) rank("Géneros", collect(withInfo, x => x.i.genres));
+  rank("Por año", collect(both.map(w => ({ w })), x => [(x.w.d || "").slice(0, 4)]), { max: 6, order: (a, b) => b[0].localeCompare(a[0]) });
+  rank("Décadas del estreno", collect(withInfo, x => { const y = yearOf(x); if (!y) return []; const dec = Math.floor(y / 10) * 10; return ["Años " + (dec < 2000 ? dec % 100 : dec)]; }));
+  rank("Directores que se repiten", collect(withInfo, x => x.i.directors), { min: 2, need: 1 });
+  rank("Actores que se repiten", collect(withInfo, x => x.i.cast), { min: 2, need: 1 });
   const dn = type => { try { const f = new Intl.DisplayNames(["es"], { type }); return c => { try { const s = f.of(c); return s.charAt(0).toUpperCase() + s.slice(1); } catch(e){ return c; } }; } catch(e){ return c => c; } };
-  rank("Países", count(x => x.i.countries), { name: dn("region") });
-  rank("Idiomas originales", count(x => x.i.lang ? [x.i.lang] : []), { name: dn("language") });
+  rank("Países", collect(withInfo, x => x.i.countries), { name: dn("region") });
+  rank("Idiomas originales", collect(withInfo, x => x.i.lang ? [x.i.lang] : []), { name: dn("language") });
 
-  $("#togStats").replaceChildren(...tiles.map(t => {
-    const el = document.createElement("div"); el.className = "tstat";
-    const k = document.createElement("div"); k.className = "k"; k.textContent = t.k;
-    const v = document.createElement("div"); v.className = "v" + (t.txt ? " txt" : ""); v.textContent = t.v;
-    el.append(k, v);
-    if (t.d) { const d = document.createElement("div"); d.className = "d"; d.textContent = t.d; el.appendChild(d); }
-    return el;
-  }));
-  $("#togRanks").replaceChildren(...ranks.map(r => {
-    const el = document.createElement("div"); el.className = "trank";
-    const h = document.createElement("h3"); h.textContent = r.title;
-    const ol = document.createElement("ol");
-    r.rows.forEach(([name, n]) => {
-      const li = document.createElement("li");
-      const row = document.createElement("div"); row.className = "row";
-      const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = name; nm.title = name;
-      const ct = document.createElement("span"); ct.className = "ct"; ct.textContent = n;
-      row.append(nm, ct);
-      const bar = document.createElement("div"); bar.className = "bar";
-      const fill = document.createElement("span"); fill.style.width = Math.round(n / r.top * 100) + "%"; bar.appendChild(fill);
-      li.append(row, bar); ol.appendChild(li);
+  // dibujo
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const poster = (w, size, cls) => {
+    if (!w.poster) return el("span", cls + " none");
+    const i = el("img", cls); i.src = "https://image.tmdb.org/t/p/" + size + w.poster; i.alt = ""; i.loading = "lazy"; return i;
+  };
+  const ratesEl = (w, links) => {
+    const r = el("div", "rt");
+    ["a", "b"].forEach(s => {
+      const e = w.by[s]; if (!e) return;
+      const a = el(links && e.u ? "a" : "span"); if (links && e.u) { a.href = e.u; a.target = "_blank"; a.rel = "noopener noreferrer"; }
+      a.append(nameOf(s) + " ", el("span", "st " + s, stars(e.r))); r.appendChild(a);
     });
-    el.append(h, ol); return el;
+    return r;
+  };
+  const tileEl = t => {
+    const box = el("div", "tstat" + (t.hero ? " hero" : "") + (t.wide ? " wide" : ""));
+    if (t.w && !t.hero) box.appendChild(poster(t.w, "w92", "tp"));
+    const b = el("div", "tb");
+    b.appendChild(el("div", "k", t.k));
+    const v = el("div", "v" + (t.txt ? " txt" : ""));
+    if (t.dot) v.append(el("span", "dot " + t.dot), " ");
+    v.append(t.v); b.appendChild(v);
+    if (t.rates) b.appendChild(ratesEl(t.rates));
+    if (t.d) b.appendChild(el("div", "d", t.d));
+    if (t.chart) {
+      const wk = el("div", "wk"), mx = Math.max(...t.chart);
+      [1, 2, 3, 4, 5, 6, 0].forEach(i => {
+        const c = el("div", t.chart[i] === mx ? "top" : ""), bar = el("i");
+        bar.style.height = Math.round(t.chart[i] / mx * 100) + "%";
+        c.append(bar, el("span", null, "DLMMJVS"[i])); wk.appendChild(c);
+      });
+      b.appendChild(wk);
+    }
+    box.appendChild(b); return box;
+  };
+  const GROUPS = [["time", "El tiempo"], ["notes", "Las notas"], ["films", "Las películas"]];
+  $("#togStats").replaceChildren(...GROUPS.filter(([g]) => groups[g].length).map(([g, title]) => {
+    const sec = el("section", "tgroup"), grid = el("div", "tstats");
+    grid.append(...groups[g].map(tileEl));
+    sec.append(el("h3", null, title), grid); return sec;
   }));
+
+  const ficha = w => {
+    const i = infoOf(w), box = el("div", "tficha");
+    box.appendChild(poster(w, "w154", "fp"));
+    const b = el("div", "fb");
+    b.appendChild(el("div", "ft", label(w)));
+    const line = [i && i.directors && i.directors.length ? i.directors.join(", ") : "", i && i.runtime ? dur(i.runtime) : ""].filter(Boolean).join(" · ");
+    if (line) b.appendChild(el("div", "fl", line));
+    if (i && i.genres && i.genres.length) b.appendChild(el("div", "fl", i.genres.join(", ")));
+    b.appendChild(el("div", "fl", "Vista juntos el " + fmtDay(w.d)));
+    b.appendChild(ratesEl(w, true));
+    box.appendChild(b); return box;
+  };
+  $("#togRanks").replaceChildren(...(ranks.length ? [(() => {
+    const sec = el("section", "tgroup"), grid = el("div", "tranks");
+    grid.append(...ranks.map(r => {
+      const box = el("div", "trank"), ol = el("ol");
+      r.rows.forEach(row => {
+        const open = !!togOpen && togOpen.r === r.title && togOpen.k === row.k;
+        const li = el("li", open ? "open" : "");
+        const btn = el("button", "row"); btn.type = "button"; btn.setAttribute("aria-expanded", String(open));
+        const nm = el("span", "nm", row.name); nm.title = row.name;
+        btn.append(nm, el("span", "ct", row.films.length));
+        btn.addEventListener("click", () => { togOpen = open ? null : { r: r.title, k: row.k }; togFicha = null; renderTogether(); });
+        const bar = el("div", "bar"), fill = el("span"); fill.style.width = Math.round(row.films.length / r.top * 100) + "%"; bar.appendChild(fill);
+        li.append(btn, bar);
+        if (open) {
+          const films = row.films.slice().sort((a, b) => (b.d || "").localeCompare(a.d || ""));
+          const strip = el("div", "thumbs");
+          films.forEach(w => {
+            const t = el("button", "thumb" + (togFicha === w.id ? " now" : "")); t.type = "button";
+            const pic = el("span", "pic", w.poster ? "" : w.t);
+            if (w.poster) { const im = el("img"); im.src = "https://image.tmdb.org/t/p/w92" + w.poster; im.alt = ""; im.loading = "lazy"; pic.appendChild(im); }
+            t.append(pic, el("span", "cap", w.t));
+            t.addEventListener("click", () => { togFicha = togFicha === w.id ? null : w.id; renderTogether(); });
+            strip.appendChild(t);
+          });
+          li.appendChild(strip);
+          const sel = films.find(w => w.id === togFicha);
+          if (sel) li.appendChild(ficha(sel));
+        }
+        ol.appendChild(li);
+      });
+      box.append(el("h3", null, r.title), ol); return box;
+    }));
+    sec.append(el("h3", null, "Los más vistos"), el("p", "tnote", "Toca una fila para ver sus películas."), grid);
+    return sec;
+  })()] : []));
+
   const note = $("#togInfoNote");
   const missing = both.filter(w => w.tmdbId && !INFO[String(w.tmdbId)]).length;   // las sin tmdbId nunca tendrán datos
   note.hidden = !(missing && state.mode === "firebase");
@@ -1629,7 +1788,7 @@ document.querySelectorAll(".slot").forEach(box => {
    El acceso directo del celular guarda la página y no siempre la vuelve a pedir. Cada vez que
    la app vuelve a primer plano, compara su versión con la publicada; si cambió, ofrece actualizar.
    APP_VERSION se cambia en cada entrega. */
-const APP_VERSION = "2026-09-30-1";
+const APP_VERSION = "2026-09-30-4";
 async function checkUpdate(){
   if (!/^https?:/.test(location.protocol)) return;
   try {
